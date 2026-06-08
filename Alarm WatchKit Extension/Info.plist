@@ -4,6 +4,8 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
+	<key>AlarmEndpointURL</key>
+	<string>https://example.com/alarm</string>
 	<key>CFBundleDisplayName</key>
 	<string>Alarm WatchKit Extension</string>
 	<key>CFBundleExecutable</key>

@@ -50,10 +50,11 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 
 ## Running or Using the Project
 
-- Open `Alarm.xcodeproj` in Xcode, choose the app or sample scheme, and run it on the matching simulator/device.
+- Open `Alarm.xcworkspace` in Xcode, choose the app or sample scheme, and run it on the matching simulator/device.
 
 ## Testing and Verification
 
+- `make check` - runs dependency-free static contracts and attempts an Xcode build when `xcodebuild` is available
 - Xcode's test action or `xcodebuild test` with the appropriate scheme and destination
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
@@ -61,6 +62,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
 ## Configuration and Secrets
 
 - No required secret or credential file was identified in the repository scan. If you add integrations later, keep secrets out of git.
+- The WatchKit extension reads `AlarmEndpointURL` from `Alarm WatchKit Extension/Info.plist`. Keep local or production endpoints HTTPS-only and avoid committing credentials.
 
 ## Security and Privacy Notes
 
@@ -71,6 +73,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 ## Maintenance Notes
 
 - This looks like an Apple platform project or sample. Xcode, Swift, CocoaPods, and deployment target versions may need to match the original project era.
+- See `CHANGES.md` and `docs/plans/2026-06-08-watchkit-endpoint-contracts.md`
+  for the current endpoint configuration baseline.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 

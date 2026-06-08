@@ -9,8 +9,18 @@ import WatchKit
 import Foundation
 import Alamofire
 
-private let alarmEndpointURL = "http://myhome.com/alarm"
 private let alarmTimeParameter = "alarmTime"
+
+func alarmEndpointURL() -> String? {
+    if let endpoint = NSBundle.mainBundle().objectForInfoDictionaryKey("AlarmEndpointURL") as? String {
+        let trimmedEndpoint = endpoint.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
+        if count(trimmedEndpoint) > 0 && trimmedEndpoint.hasPrefix("https://") {
+            return trimmedEndpoint
+        }
+    }
+
+    return nil
+}
 
 class InterfaceController: WKInterfaceController {
     
@@ -26,10 +36,15 @@ class InterfaceController: WKInterfaceController {
     }
     
     @IBAction func setAlarm() {
-        // Send HTTP Request to Set Alarm
-        Alamofire.request(.GET, alarmEndpointURL, parameters: [
-            alarmTimeParameter: String(wakeUp)
-        ])
+        if let endpoint = alarmEndpointURL() {
+            Alamofire.request(.GET, endpoint, parameters: alarmParameters())
+        } else {
+            NSLog("Alarm endpoint is not configured; skipping alarm request.")
+        }
+    }
+
+    func alarmParameters() -> [String: String] {
+        return [alarmTimeParameter: String(wakeUp)]
     }
     
     override func awakeWithContext(context: AnyObject?) {
