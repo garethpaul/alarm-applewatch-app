@@ -51,3 +51,6 @@ or device-specific identifiers.
 - New network behavior that keeps sensitive endpoints hardcoded
 - Dependency updates without workspace verification
 - Production alarm-service claims that are not backed by app behavior and tests
+
+This list is a roadmap guardrail, not a permanent rule.
+Strong user demand and strong technical rationale can change it.
