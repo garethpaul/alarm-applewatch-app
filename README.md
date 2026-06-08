@@ -77,9 +77,3 @@ When the required SDK or runtime is unavailable, use static checks and source re
 ## Contributing
 
 Keep changes small and tied to the project that is already present in this repository. For code changes, document the toolchain used, avoid committing generated dependency directories or local configuration, and update this README when setup or verification steps change.
-
-## Existing Project Notes
-
-Prior README summary:
-
-> Alarm Apple Watch App Legacy Swift/WatchKit alarm sample. The watch extension lets a user choose an alarm hour and sends that value to the configured alarm endpoint. Toolchain This project was created with an early Swift and WatchKit toolchain and uses a CocoaPods-era workspace: - Open and build `Alarm.xcworkspace`, not `Alarm.xcodeproj`. - CocoaPods is required to restore Alamofire. - `Podfile.lock` records Alamofire 1.2.1 and CocoaPods 0.37.0 beta-era state.
