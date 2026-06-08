@@ -9,6 +9,9 @@ import WatchKit
 import Foundation
 import Alamofire
 
+private let alarmEndpointURL = "http://myhome.com/alarm"
+private let alarmTimeParameter = "alarmTime"
+
 class InterfaceController: WKInterfaceController {
     
     var wakeUp = 5
@@ -24,7 +27,9 @@ class InterfaceController: WKInterfaceController {
     
     @IBAction func setAlarm() {
         // Send HTTP Request to Set Alarm
-        Alamofire.request(.GET, "http://myhome.com/alarm", parameters: ["alarmTime": String(wakeUp)])
+        Alamofire.request(.GET, alarmEndpointURL, parameters: [
+            alarmTimeParameter: String(wakeUp)
+        ])
     }
     
     override func awakeWithContext(context: AnyObject?) {
