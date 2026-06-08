@@ -44,7 +44,7 @@ to be explicit and kept out of committed secrets.
 Do not add logging that exposes user-selected alarm data, endpoint credentials,
 or device-specific identifiers.
 
-## What We Will Not Merge For Now
+## What We Will Not Merge (For Now)
 
 - Large rewrites that discard the sample's educational structure without a
   migration note
