@@ -1,5 +1,8 @@
 # alarm-applewatch-app
 
+<!-- README-OVERVIEW-IMAGE -->
+![Project overview](docs/readme-overview.svg)
+
 ## Overview
 
 `garethpaul/alarm-applewatch-app` is an Apple platform application or Swift sample. AppleWatch Alarm App
@@ -80,4 +83,3 @@ Keep changes small and tied to the project that is already present in this repos
 Prior README summary:
 
 > Alarm Apple Watch App <!-- README-OVERVIEW-IMAGE --> Legacy Swift/WatchKit alarm sample. The watch extension lets a user choose an alarm hour and sends that value to the configured alarm endpoint. Toolchain This project was created with an early Swift and WatchKit toolchain and uses a CocoaPods-era workspace: - Open and build `Alarm.xcworkspace`, not `Alarm.xcodeproj`. - CocoaPods is required to restore Alamofire. - `Podfile.lock` records Alamofire 1.2.1 and CocoaPods 0.37.0 beta-era state.
-
