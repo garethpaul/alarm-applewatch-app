@@ -1,5 +1,8 @@
 ## Alarm Apple Watch App Vision
 
+This document explains the current state and direction of the project.
+Project overview and developer docs: [`README.md`](README.md)
+
 Alarm Apple Watch App is a legacy Swift and WatchKit sample. The watch
 extension lets a user choose an alarm hour and send that value to a configured
 alarm endpoint.
