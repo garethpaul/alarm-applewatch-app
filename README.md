@@ -1,5 +1,8 @@
 # Alarm Apple Watch App
 
+<!-- README-OVERVIEW-IMAGE -->
+![Project overview](docs/readme-overview.svg)
+
 Legacy Swift/WatchKit alarm sample. The watch extension lets a user choose an
 alarm hour and sends that value to the configured alarm endpoint.
 
