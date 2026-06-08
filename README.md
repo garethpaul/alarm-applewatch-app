@@ -1,50 +1,83 @@
-# Alarm Apple Watch App
+# alarm-applewatch-app
 
-<!-- README-OVERVIEW-IMAGE -->
-![Project overview](docs/readme-overview.svg)
+## Overview
 
-Legacy Swift/WatchKit alarm sample. The watch extension lets a user choose an
-alarm hour and sends that value to the configured alarm endpoint.
+`garethpaul/alarm-applewatch-app` is an Apple platform application or Swift sample. AppleWatch Alarm App
 
-## Toolchain
+This README is based on the checked-in source, manifests, scripts, and repository metadata on the `master` branch. The project language mix found during review was: Swift (5).
 
-This project was created with an early Swift and WatchKit toolchain and uses a
-CocoaPods-era workspace:
+## Repository Contents
 
-- Open and build `Alarm.xcworkspace`, not `Alarm.xcodeproj`.
-- CocoaPods is required to restore Alamofire.
-- `Podfile.lock` records Alamofire 1.2.1 and CocoaPods 0.37.0 beta-era state.
+- `README.md` - project overview and local usage notes
+- `Podfile` - Apple platform dependency metadata
+- `Alarm` - source or example code
+- `Alarm WatchKit App` - source or example code
+- `Alarm WatchKit Extension` - source or example code
+- `Alarm.xcodeproj` - Xcode project file
+- `AlarmTests` - source or example code
+- `docs` - source or example code
+- `Podfile.lock` - Apple platform dependency metadata
+- `SECURITY.md` - security reporting and disclosure guidance
+- `VISION.md` - project direction and maintenance guardrails
 
-Install dependencies before opening the workspace:
+Additional scan context:
 
-```sh
+- Source directories: Alarm, Alarm WatchKit App, Alarm WatchKit Extension, AlarmTests, docs
+- Dependency and build manifests: Podfile, Podfile.lock
+- Entry points or build surfaces: Alarm.xcodeproj
+- Test-looking files: AlarmTests/AlarmTests.swift, AlarmTests/Info.plist
+
+## Getting Started
+
+### Prerequisites
+
+- Git
+- macOS with Xcode for building Apple platform projects
+- CocoaPods if dependencies need to be installed
+
+### Setup
+
+```bash
+git clone https://github.com/garethpaul/alarm-applewatch-app.git
+cd alarm-applewatch-app
 pod install
 ```
 
-## Verify
+The setup commands above are derived from repository files. Legacy mobile, Python, or JavaScript samples may require older SDKs or package versions than a modern workstation uses by default.
 
-List schemes:
+## Running or Using the Project
 
-```sh
-xcodebuild -list -workspace Alarm.xcworkspace
-```
+- Open `Alarm.xcodeproj` in Xcode, choose the app or sample scheme, and run it on the matching simulator/device.
 
-Run the app test target with an available simulator destination:
+## Testing and Verification
 
-```sh
-xcodebuild test \
-  -workspace Alarm.xcworkspace \
-  -scheme Alarm \
-  -destination 'platform=iOS Simulator,name=iPhone 6'
-```
+- Xcode's test action or `xcodebuild test` with the appropriate scheme and destination
 
-This environment does not currently provide `xcodebuild` or `pod`, so local
-verification is limited to source review and git checks until the Apple
-toolchain is installed.
+When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
-## Modernization Notes
+## Configuration and Secrets
 
-The WatchKit extension still uses a hardcoded plain HTTP endpoint and
-Alamofire 1.2.1. A future pass should move the endpoint to configuration,
-prefer HTTPS, update the dependency stack, and replace placeholder XCTest
-coverage with tests around extracted app behavior.
+- No required secret or credential file was identified in the repository scan. If you add integrations later, keep secrets out of git.
+
+## Security and Privacy Notes
+
+- Review changes touching network requests, sockets, or service endpoints; examples from the scan include Alarm/Info.plist, Alarm WatchKit App/Info.plist, Alarm WatchKit Extension/Info.plist, Alarm WatchKit Extension/InterfaceController.swift, and 3 more.
+- Review changes touching file, media, JSON, XML, CSV, OCR, or data parsing; examples from the scan include Alarm/Info.plist, Alarm WatchKit App/Info.plist, Alarm WatchKit Extension/Info.plist, AlarmTests/Info.plist.
+- Review changes touching database, model, or persistence code; examples from the scan include docs/plans/2026-06-08-watchkit-maintainability-baseline.md.
+
+## Maintenance Notes
+
+- This looks like an Apple platform project or sample. Xcode, Swift, CocoaPods, and deployment target versions may need to match the original project era.
+- See `SECURITY.md` for vulnerability reporting and safe research guidance.
+- See `VISION.md` for project direction and contribution guardrails.
+
+## Contributing
+
+Keep changes small and tied to the project that is already present in this repository. For code changes, document the toolchain used, avoid committing generated dependency directories or local configuration, and update this README when setup or verification steps change.
+
+## Existing Project Notes
+
+Prior README summary:
+
+> Alarm Apple Watch App <!-- README-OVERVIEW-IMAGE --> Legacy Swift/WatchKit alarm sample. The watch extension lets a user choose an alarm hour and sends that value to the configured alarm endpoint. Toolchain This project was created with an early Swift and WatchKit toolchain and uses a CocoaPods-era workspace: - Open and build `Alarm.xcworkspace`, not `Alarm.xcodeproj`. - CocoaPods is required to restore Alamofire. - `Podfile.lock` records Alamofire 1.2.1 and CocoaPods 0.37.0 beta-era state.
+
