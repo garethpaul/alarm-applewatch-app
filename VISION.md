@@ -41,7 +41,6 @@ Canonical security policy and reporting:
 
 - [`SECURITY.md`](SECURITY.md)
 
-
 Alarm requests should not depend on hardcoded plain HTTP endpoints long term.
 Endpoint configuration, transport security, and any future authentication need
 to be explicit and kept out of committed secrets.
