@@ -9,7 +9,7 @@ import WatchKit
 import Foundation
 import Alamofire
 
-private let alarmEndpointURL = "http://myhome.com/alarm"
+private let alarmEndpointURL = "https://myhome.com/alarm"
 private let alarmTimeParameter = "alarmTime"
 
 class InterfaceController: WKInterfaceController {
