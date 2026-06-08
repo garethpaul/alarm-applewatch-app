@@ -57,7 +57,10 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - `make check` - runs dependency-free static contracts and attempts an Xcode build when `xcodebuild` is available
 - Xcode's test action or `xcodebuild test` with the appropriate scheme and destination
 
-When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
+The static contracts cover endpoint configuration, WatchKit plist relationships,
+notification payload JSON, Xcode target types, and legacy CocoaPods pins. When
+the required SDK or runtime is unavailable, use static checks and source review
+first, then verify on a machine that has the matching platform toolchain.
 
 ## Configuration and Secrets
 
