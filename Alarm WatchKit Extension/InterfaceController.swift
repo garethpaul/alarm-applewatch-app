@@ -26,7 +26,7 @@ class InterfaceController: WKInterfaceController {
     }
     
     @IBAction func setAlarm() {
-        // Send HTTP Request to Set Alarm
+        // Send request to set the alarm.
         Alamofire.request(.GET, alarmEndpointURL, parameters: [
             alarmTimeParameter: String(wakeUp)
         ])

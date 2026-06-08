@@ -21,18 +21,17 @@ Issue #1 was filed from the public repository review because `Alarm WatchKit Ext
 
 - R1. `Alarm WatchKit Extension/InterfaceController.swift` must not contain a runtime `http://myhome.com/alarm` endpoint.
 - R2. The alarm request must continue to use the existing `alarmTime` parameter and `wakeUp` value.
-- R3. The README must no longer describe the alarm endpoint as plain HTTP in its current-state notes.
-- R4. The change must avoid Swift, Alamofire, CocoaPods, or Xcode project migrations.
-- R5. The PR must reference `https://github.com/garethpaul/alarm-applewatch-app/issues/1`.
+- R3. The change must avoid Swift, Alamofire, CocoaPods, or Xcode project migrations.
+- R4. The PR must reference `https://github.com/garethpaul/alarm-applewatch-app/issues/1`.
 
 ## Implementation Unit
 
 ### U1. HTTPS Alarm Endpoint
 
-- **Goal:** Change the default alarm endpoint constant from HTTP to HTTPS and update README modernization notes to describe endpoint configuration as future hardening rather than the current cleartext flaw.
-- **Files:** `Alarm WatchKit Extension/InterfaceController.swift`, `README.md`
+- **Goal:** Change the default alarm endpoint constant from HTTP to HTTPS.
+- **Files:** `Alarm WatchKit Extension/InterfaceController.swift`
 - **Test Scenarios:** Verify no `http://myhome.com/alarm` runtime endpoint remains, `setAlarm()` still sends `alarmTime: String(wakeUp)`, and only source/docs files changed.
-- **Verification:** `rg -n "http://myhome\\.com/alarm|https://myhome\\.com/alarm|alarmTimeParameter|Alamofire.request" "Alarm WatchKit Extension/InterfaceController.swift" README.md` and `git diff --check`.
+- **Verification:** `bash scripts/check-https-alarm-endpoint.sh` and `git diff --check`.
 
 ## Risks
 
