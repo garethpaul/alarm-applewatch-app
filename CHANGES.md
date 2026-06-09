@@ -2,6 +2,7 @@
 
 ## 2026-06-09
 
+- Rejected WatchKit alarm endpoint URLs that include query strings or fragments.
 - Rejected WatchKit alarm endpoint URLs that embed usernames or passwords
   before the extension can send an alarm request.
 - Replaced implicitly unwrapped WatchKit outlets in the alarm interface

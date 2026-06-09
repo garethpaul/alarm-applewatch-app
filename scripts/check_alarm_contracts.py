@@ -167,6 +167,18 @@ def check_alarm_endpoint(interface, extension_plist, failures):
     )
     require_contains(
         interface,
+        "url.query == nil",
+        "InterfaceController must reject AlarmEndpointURL values with query strings",
+        failures,
+    )
+    require_contains(
+        interface,
+        "url.fragment == nil",
+        "InterfaceController must reject AlarmEndpointURL values with fragments",
+        failures,
+    )
+    require_contains(
+        interface,
         "if let endpoint = alarmEndpointURL()",
         "setAlarm must skip network requests when the endpoint is not configured",
         failures,
@@ -212,6 +224,13 @@ def check_alarm_endpoint(interface, extension_plist, failures):
         and parsed_endpoint.username is None
         and parsed_endpoint.password is None,
         "extension Info.plist AlarmEndpointURL placeholder must not include credentials",
+        failures,
+    )
+    require(
+        parsed_endpoint is not None
+        and parsed_endpoint.query == ""
+        and parsed_endpoint.fragment == "",
+        "extension Info.plist AlarmEndpointURL placeholder must not include query strings or fragments",
         failures,
     )
 
