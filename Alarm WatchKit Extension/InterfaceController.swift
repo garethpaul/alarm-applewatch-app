@@ -48,13 +48,13 @@ class InterfaceController: WKInterfaceController {
     
     var wakeUp = 5
     
-    @IBOutlet weak var slider: WKInterfaceSlider!
+    @IBOutlet weak var slider: WKInterfaceSlider?
     
-    @IBOutlet weak var alarmValue: WKInterfaceLabel!
+    @IBOutlet weak var alarmValue: WKInterfaceLabel?
     
     @IBAction func update(value: Float) {
         wakeUp = normalizedAlarmHour(value)
-        alarmValue.setText(alarmDisplayText(wakeUp))
+        alarmValue?.setText(alarmDisplayText(wakeUp))
     }
     
     @IBAction func setAlarm() {
@@ -72,7 +72,7 @@ class InterfaceController: WKInterfaceController {
     override func awakeWithContext(context: AnyObject?) {
         super.awakeWithContext(context)
         // Configure interface objects here.
-        alarmValue.setText(alarmDisplayText(wakeUp))
+        alarmValue?.setText(alarmDisplayText(wakeUp))
     }
     
     override func willActivate() {

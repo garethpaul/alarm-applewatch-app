@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-09
+
+- Replaced implicitly unwrapped WatchKit outlets in the alarm interface
+  controller with optional outlets and nil-safe label updates, with static
+  contracts to keep disconnected storyboard outlets from crashing the sample.
+
 ## 2026-06-08
 
 - Added static contracts for the WatchKit alarm endpoint, HTTPS transport expectation, and workspace wiring.

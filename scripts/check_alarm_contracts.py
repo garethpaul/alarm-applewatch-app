@@ -209,8 +209,8 @@ def check_alarm_hour_bounds(interface, storyboard, failures):
     )
     require_contains(
         interface,
-        "alarmValue.setText(alarmDisplayText(wakeUp))",
-        "alarm display text must use the normalized display helper",
+        "alarmValue?.setText(alarmDisplayText(wakeUp))",
+        "alarm display text must use the normalized display helper with nil-safe outlet updates",
         failures,
     )
     require_contains(
@@ -223,6 +223,31 @@ def check_alarm_hour_bounds(interface, storyboard, failures):
         storyboard,
         '<slider width="1" alignment="center" value="5" minimum="5" maximum="11" steps="6"',
         "WatchKit storyboard slider must preserve the 5 through 11 hour range",
+        failures,
+    )
+
+
+def check_watchkit_outlet_safety(interface, failures):
+    require_contains(
+        interface,
+        "@IBOutlet weak var slider: WKInterfaceSlider?",
+        "slider outlet must not be an implicitly unwrapped optional",
+        failures,
+    )
+    require_contains(
+        interface,
+        "@IBOutlet weak var alarmValue: WKInterfaceLabel?",
+        "alarmValue outlet must not be an implicitly unwrapped optional",
+        failures,
+    )
+    require(
+        "WKInterfaceSlider!" not in interface and "WKInterfaceLabel!" not in interface,
+        "WatchKit outlets must avoid implicitly unwrapped optionals",
+        failures,
+    )
+    require(
+        interface.count("alarmValue?.setText(alarmDisplayText(wakeUp))") >= 2,
+        "all alarm label updates must use optional chaining",
         failures,
     )
 
@@ -381,6 +406,7 @@ def main():
 
     check_alarm_endpoint(interface, extension, failures)
     check_alarm_hour_bounds(interface, storyboard, failures)
+    check_watchkit_outlet_safety(interface, failures)
     check_plist_contracts(app, watch_app, extension, tests, failures)
     check_push_payload(failures)
     check_dependency_and_project_contracts(project, podfile, podfile_lock, failures)
