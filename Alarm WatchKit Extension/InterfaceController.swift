@@ -37,7 +37,13 @@ func alarmEndpointURL() -> String? {
     if let endpoint = NSBundle.mainBundle().objectForInfoDictionaryKey("AlarmEndpointURL") as? String {
         let trimmedEndpoint = endpoint.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
         if count(trimmedEndpoint) > 0 && trimmedEndpoint.hasPrefix("https://") {
-            return trimmedEndpoint
+            if let url = NSURL(string: trimmedEndpoint) {
+                if let host = url.host {
+                    if count(host) > 0 {
+                        return trimmedEndpoint
+                    }
+                }
+            }
         }
     }
 

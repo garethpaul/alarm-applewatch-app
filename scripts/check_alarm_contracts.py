@@ -6,6 +6,7 @@ from pathlib import Path
 import plistlib
 import re
 import sys
+from urllib.parse import urlparse
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -115,6 +116,7 @@ def check_required_files(failures):
 
 def check_alarm_endpoint(interface, extension_plist, failures):
     endpoint = extension_plist.get("AlarmEndpointURL")
+    parsed_endpoint = urlparse(endpoint) if isinstance(endpoint, str) else None
 
     require(
         "http://myhome.com/alarm" not in interface,
@@ -137,6 +139,18 @@ def check_alarm_endpoint(interface, extension_plist, failures):
         interface,
         'hasPrefix("https://")',
         "InterfaceController must require HTTPS alarm endpoints",
+        failures,
+    )
+    require_contains(
+        interface,
+        "NSURL(string: trimmedEndpoint)",
+        "InterfaceController must parse AlarmEndpointURL before using it",
+        failures,
+    )
+    require_contains(
+        interface,
+        "url.host",
+        "InterfaceController must require a host on AlarmEndpointURL",
         failures,
     )
     require_contains(
@@ -170,8 +184,10 @@ def check_alarm_endpoint(interface, extension_plist, failures):
         failures,
     )
     require(
-        isinstance(endpoint, str) and endpoint.startswith("https://"),
-        "extension Info.plist must define an HTTPS AlarmEndpointURL placeholder",
+        parsed_endpoint is not None
+        and parsed_endpoint.scheme == "https"
+        and bool(parsed_endpoint.netloc),
+        "extension Info.plist must define an HTTPS AlarmEndpointURL placeholder with a host",
         failures,
     )
     require(

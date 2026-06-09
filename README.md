@@ -65,7 +65,7 @@ first, then verify on a machine that has the matching platform toolchain.
 ## Configuration and Secrets
 
 - No required secret or credential file was identified in the repository scan. If you add integrations later, keep secrets out of git.
-- The WatchKit extension reads `AlarmEndpointURL` from `Alarm WatchKit Extension/Info.plist`. Keep local or production endpoints HTTPS-only and avoid committing credentials.
+- The WatchKit extension reads `AlarmEndpointURL` from `Alarm WatchKit Extension/Info.plist`. Keep local or production endpoints HTTPS-only, parseable with a host, and free of committed credentials.
 - The WatchKit alarm slider and request code clamp alarm hours to the 5 through 11 range before displaying or sending `alarmTime`.
 - WatchKit outlets are optional and label updates use optional chaining so a disconnected legacy storyboard outlet does not crash the controller.
 
@@ -84,6 +84,8 @@ first, then verify on a machine that has the matching platform toolchain.
   alarm-hour bounds contract.
 - See `docs/plans/2026-06-09-watchkit-outlet-safety.md` for the nil-safe
   outlet contract.
+- See `docs/plans/2026-06-09-watchkit-endpoint-url-shape.md` for the
+  parseable endpoint URL contract.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 

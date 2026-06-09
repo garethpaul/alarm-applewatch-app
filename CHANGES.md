@@ -5,6 +5,8 @@
 - Replaced implicitly unwrapped WatchKit outlets in the alarm interface
   controller with optional outlets and nil-safe label updates, with static
   contracts to keep disconnected storyboard outlets from crashing the sample.
+- Required `AlarmEndpointURL` to parse as an HTTPS URL with a host before the
+  WatchKit extension sends the alarm request.
 
 ## 2026-06-08
 
