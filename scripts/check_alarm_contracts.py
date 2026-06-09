@@ -250,6 +250,11 @@ def check_alarm_endpoint(interface, extension_plist, failures):
         failures,
     )
     require(
+        parsed_endpoint is not None and parsed_endpoint.hostname == "example.com",
+        "extension Info.plist AlarmEndpointURL placeholder must stay on example.com",
+        failures,
+    )
+    require(
         parsed_endpoint is not None
         and parsed_endpoint.username is None
         and parsed_endpoint.password is None,
@@ -466,12 +471,14 @@ def check_dependency_and_project_contracts(project, podfile, podfile_lock, failu
     )
 
 
-def check_docs(readme, changes, plan, failures):
+def check_docs(readme, changes, endpoint_plan, placeholder_plan, failures):
     require_contains(readme, "Alarm.xcworkspace", "README must direct maintainers to open the workspace", failures)
     require_contains(readme, "make check", "README must document local verification", failures)
     require_contains(readme, "AlarmEndpointURL", "README must document endpoint configuration", failures)
     require_contains(changes, "static contracts", "CHANGES must mention static contract coverage", failures)
-    require_contains(plan, "AlarmEndpointURL", "endpoint plan must document the plist-backed endpoint", failures)
+    require_contains(endpoint_plan, "AlarmEndpointURL", "endpoint plan must document the plist-backed endpoint", failures)
+    require_contains(placeholder_plan, "Status: Completed", "placeholder endpoint plan must be completed", failures)
+    require_contains(placeholder_plan, "make check", "placeholder endpoint plan must record make check", failures)
 
 
 def main():
@@ -486,7 +493,8 @@ def main():
     podfile_lock = read_text("Podfile.lock", failures)
     readme = read_text("README.md", failures)
     changes = read_text("CHANGES.md", failures)
-    plan = read_text("docs/plans/2026-06-08-watchkit-endpoint-contracts.md", failures)
+    endpoint_plan = read_text("docs/plans/2026-06-08-watchkit-endpoint-contracts.md", failures)
+    placeholder_plan = read_text("docs/plans/2026-06-09-watchkit-endpoint-placeholder-host.md", failures)
 
     app = read_plist("Alarm/Info.plist", failures)
     watch_app = read_plist("Alarm WatchKit App/Info.plist", failures)
@@ -499,7 +507,7 @@ def main():
     check_plist_contracts(app, watch_app, extension, tests, failures)
     check_push_payload(failures)
     check_dependency_and_project_contracts(project, podfile, podfile_lock, failures)
-    check_docs(readme, changes, plan, failures)
+    check_docs(readme, changes, endpoint_plan, placeholder_plan, failures)
 
     if failures:
         print("Alarm WatchKit contract check failed:")
