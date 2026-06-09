@@ -155,6 +155,18 @@ def check_alarm_endpoint(interface, extension_plist, failures):
     )
     require_contains(
         interface,
+        "if let scheme = url.scheme",
+        "InterfaceController must inspect the parsed AlarmEndpointURL scheme",
+        failures,
+    )
+    require_contains(
+        interface,
+        'scheme == "https"',
+        "InterfaceController must require the parsed AlarmEndpointURL scheme to be HTTPS",
+        failures,
+    )
+    require_contains(
+        interface,
         "url.user == nil",
         "InterfaceController must reject AlarmEndpointURL values with embedded usernames",
         failures,

@@ -2,6 +2,9 @@
 
 ## 2026-06-09
 
+- Required the parsed WatchKit alarm endpoint scheme to be exactly HTTPS before
+  sending alarm requests.
+- Added static checker coverage for parsed endpoint scheme validation.
 - Rejected WatchKit alarm endpoint URLs that include query strings or fragments.
 - Rejected WatchKit alarm endpoint URLs that embed usernames or passwords
   before the extension can send an alarm request.

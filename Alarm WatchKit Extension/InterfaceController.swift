@@ -39,12 +39,15 @@ func alarmEndpointURL() -> String? {
         if count(trimmedEndpoint) > 0 && trimmedEndpoint.hasPrefix("https://") {
             if let url = NSURL(string: trimmedEndpoint) {
                 if let host = url.host {
-                    if count(host) > 0 &&
-                        url.user == nil &&
-                        url.password == nil &&
-                        url.query == nil &&
-                        url.fragment == nil {
-                        return trimmedEndpoint
+                    if let scheme = url.scheme {
+                        if scheme == "https" &&
+                            count(host) > 0 &&
+                            url.user == nil &&
+                            url.password == nil &&
+                            url.query == nil &&
+                            url.fragment == nil {
+                            return trimmedEndpoint
+                        }
                     }
                 }
             }

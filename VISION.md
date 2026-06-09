@@ -22,6 +22,7 @@ Priority:
 - Keep CocoaPods and Alamofire setup documented for the legacy codebase
 - Make the alarm endpoint behavior visible rather than hidden in source code
 - Require alarm endpoints to be parseable HTTPS URLs with hosts
+- Validate the parsed alarm endpoint scheme before network requests
 - Reject alarm endpoint URLs that embed credentials
 - Reject alarm endpoint URLs that carry query strings or fragments
 - Keep the WatchKit alarm-hour range explicit in code and static contracts
