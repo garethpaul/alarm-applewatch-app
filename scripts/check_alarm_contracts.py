@@ -155,6 +155,18 @@ def check_alarm_endpoint(interface, extension_plist, failures):
     )
     require_contains(
         interface,
+        "url.user == nil",
+        "InterfaceController must reject AlarmEndpointURL values with embedded usernames",
+        failures,
+    )
+    require_contains(
+        interface,
+        "url.password == nil",
+        "InterfaceController must reject AlarmEndpointURL values with embedded passwords",
+        failures,
+    )
+    require_contains(
+        interface,
         "if let endpoint = alarmEndpointURL()",
         "setAlarm must skip network requests when the endpoint is not configured",
         failures,
@@ -193,6 +205,13 @@ def check_alarm_endpoint(interface, extension_plist, failures):
     require(
         isinstance(endpoint, str) and "myhome.com" not in endpoint,
         "extension Info.plist must not keep the old myhome.com endpoint",
+        failures,
+    )
+    require(
+        parsed_endpoint is not None
+        and parsed_endpoint.username is None
+        and parsed_endpoint.password is None,
+        "extension Info.plist AlarmEndpointURL placeholder must not include credentials",
         failures,
     )
 

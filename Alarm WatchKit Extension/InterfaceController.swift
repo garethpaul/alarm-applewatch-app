@@ -39,7 +39,7 @@ func alarmEndpointURL() -> String? {
         if count(trimmedEndpoint) > 0 && trimmedEndpoint.hasPrefix("https://") {
             if let url = NSURL(string: trimmedEndpoint) {
                 if let host = url.host {
-                    if count(host) > 0 {
+                    if count(host) > 0 && url.user == nil && url.password == nil {
                         return trimmedEndpoint
                     }
                 }
