@@ -10,6 +10,28 @@ import Foundation
 import Alamofire
 
 private let alarmTimeParameter = "alarmTime"
+private let minimumAlarmHour = 5
+private let maximumAlarmHour = 11
+
+func normalizedAlarmHour(hour: Int) -> Int {
+    if hour < minimumAlarmHour {
+        return minimumAlarmHour
+    }
+
+    if hour > maximumAlarmHour {
+        return maximumAlarmHour
+    }
+
+    return hour
+}
+
+func normalizedAlarmHour(value: Float) -> Int {
+    return normalizedAlarmHour(Int(value))
+}
+
+func alarmDisplayText(hour: Int) -> String {
+    return "\(normalizedAlarmHour(hour)) am"
+}
 
 func alarmEndpointURL() -> String? {
     if let endpoint = NSBundle.mainBundle().objectForInfoDictionaryKey("AlarmEndpointURL") as? String {
@@ -31,8 +53,8 @@ class InterfaceController: WKInterfaceController {
     @IBOutlet weak var alarmValue: WKInterfaceLabel!
     
     @IBAction func update(value: Float) {
-        wakeUp = Int(value)
-        alarmValue.setText("\(wakeUp) am")
+        wakeUp = normalizedAlarmHour(value)
+        alarmValue.setText(alarmDisplayText(wakeUp))
     }
     
     @IBAction func setAlarm() {
@@ -44,13 +66,13 @@ class InterfaceController: WKInterfaceController {
     }
 
     func alarmParameters() -> [String: String] {
-        return [alarmTimeParameter: String(wakeUp)]
+        return [alarmTimeParameter: String(normalizedAlarmHour(wakeUp))]
     }
     
     override func awakeWithContext(context: AnyObject?) {
         super.awakeWithContext(context)
         // Configure interface objects here.
-        alarmValue.setText("\(wakeUp) am")
+        alarmValue.setText(alarmDisplayText(wakeUp))
     }
     
     override func willActivate() {

@@ -66,6 +66,7 @@ first, then verify on a machine that has the matching platform toolchain.
 
 - No required secret or credential file was identified in the repository scan. If you add integrations later, keep secrets out of git.
 - The WatchKit extension reads `AlarmEndpointURL` from `Alarm WatchKit Extension/Info.plist`. Keep local or production endpoints HTTPS-only and avoid committing credentials.
+- The WatchKit alarm slider and request code clamp alarm hours to the 5 through 11 range before displaying or sending `alarmTime`.
 
 ## Security and Privacy Notes
 
@@ -78,6 +79,8 @@ first, then verify on a machine that has the matching platform toolchain.
 - This looks like an Apple platform project or sample. Xcode, Swift, CocoaPods, and deployment target versions may need to match the original project era.
 - See `CHANGES.md` and `docs/plans/2026-06-08-watchkit-endpoint-contracts.md`
   for the current endpoint configuration baseline.
+- See `docs/plans/2026-06-09-watchkit-alarm-hour-bounds.md` for the
+  alarm-hour bounds contract.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 

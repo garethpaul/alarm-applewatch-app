@@ -21,6 +21,7 @@ Priority:
 - Preserve the working structure around `Alarm.xcworkspace`
 - Keep CocoaPods and Alamofire setup documented for the legacy codebase
 - Make the alarm endpoint behavior visible rather than hidden in source code
+- Keep the WatchKit alarm-hour range explicit in code and static contracts
 - Avoid changes that require unavailable Apple tooling without documenting them
 
 Next priorities:

@@ -19,6 +19,7 @@ REQUIRED_FILES = [
     "Alarm WatchKit Extension/InterfaceController.swift",
     "Alarm WatchKit Extension/NotificationController.swift",
     "Alarm WatchKit Extension/PushNotificationPayload.apns",
+    "Alarm WatchKit App/Base.lproj/Interface.storyboard",
     "AlarmTests/AlarmTests.swift",
     "AlarmTests/Info.plist",
     "Podfile",
@@ -164,8 +165,8 @@ def check_alarm_endpoint(interface, extension_plist, failures):
     require_regex(
         interface,
         r"func\s+alarmParameters\(\)\s*->\s*\[String:\s*String\]\s*\{\s*"
-        r"return\s*\[\s*alarmTimeParameter\s*:\s*String\(wakeUp\)\s*\]",
-        "alarm parameters must use alarmTimeParameter and the selected wakeUp value",
+        r"return\s*\[\s*alarmTimeParameter\s*:\s*String\(normalizedAlarmHour\(wakeUp\)\)\s*\]",
+        "alarm parameters must use alarmTimeParameter and the normalized wakeUp value",
         failures,
     )
     require(
@@ -176,6 +177,52 @@ def check_alarm_endpoint(interface, extension_plist, failures):
     require(
         isinstance(endpoint, str) and "myhome.com" not in endpoint,
         "extension Info.plist must not keep the old myhome.com endpoint",
+        failures,
+    )
+
+
+def check_alarm_hour_bounds(interface, storyboard, failures):
+    require_contains(
+        interface,
+        "private let minimumAlarmHour = 5",
+        "InterfaceController must keep the minimum alarm hour explicit",
+        failures,
+    )
+    require_contains(
+        interface,
+        "private let maximumAlarmHour = 11",
+        "InterfaceController must keep the maximum alarm hour explicit",
+        failures,
+    )
+    require_regex(
+        interface,
+        r"func\s+normalizedAlarmHour\(hour:\s*Int\)\s*->\s*Int\s*\{.*"
+        r"hour\s*<\s*minimumAlarmHour.*hour\s*>\s*maximumAlarmHour",
+        "InterfaceController must clamp alarm hours to the documented range",
+        failures,
+    )
+    require_contains(
+        interface,
+        "wakeUp = normalizedAlarmHour(value)",
+        "slider updates must normalize the selected alarm hour",
+        failures,
+    )
+    require_contains(
+        interface,
+        "alarmValue.setText(alarmDisplayText(wakeUp))",
+        "alarm display text must use the normalized display helper",
+        failures,
+    )
+    require_contains(
+        interface,
+        "String(normalizedAlarmHour(wakeUp))",
+        "alarm request parameters must use a normalized alarm hour",
+        failures,
+    )
+    require_contains(
+        storyboard,
+        '<slider width="1" alignment="center" value="5" minimum="5" maximum="11" steps="6"',
+        "WatchKit storyboard slider must preserve the 5 through 11 hour range",
         failures,
     )
 
@@ -319,6 +366,7 @@ def main():
     check_required_files(failures)
 
     interface = read_text("Alarm WatchKit Extension/InterfaceController.swift", failures)
+    storyboard = read_text("Alarm WatchKit App/Base.lproj/Interface.storyboard", failures)
     project = read_text("Alarm.xcodeproj/project.pbxproj", failures)
     podfile = read_text("Podfile", failures)
     podfile_lock = read_text("Podfile.lock", failures)
@@ -332,6 +380,7 @@ def main():
     tests = read_plist("AlarmTests/Info.plist", failures)
 
     check_alarm_endpoint(interface, extension, failures)
+    check_alarm_hour_bounds(interface, storyboard, failures)
     check_plist_contracts(app, watch_app, extension, tests, failures)
     check_push_payload(failures)
     check_dependency_and_project_contracts(project, podfile, podfile_lock, failures)
