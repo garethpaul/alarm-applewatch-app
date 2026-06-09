@@ -2,6 +2,9 @@
 
 ## 2026-06-09
 
+- Required the checked-in WatchKit alarm endpoint placeholder to stay on
+  `example.com` so real alarm hosts remain local configuration.
+- Added static checker coverage for the placeholder endpoint host.
 - Required parsed WatchKit alarm endpoint URLs to use the explicit `/alarm`
   path before sending alarm requests.
 - Added static checker coverage for endpoint path validation.
