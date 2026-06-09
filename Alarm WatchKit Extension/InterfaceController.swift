@@ -10,6 +10,7 @@ import Foundation
 import Alamofire
 
 private let alarmTimeParameter = "alarmTime"
+private let alarmEndpointPath = "/alarm"
 private let minimumAlarmHour = 5
 private let maximumAlarmHour = 11
 
@@ -40,13 +41,16 @@ func alarmEndpointURL() -> String? {
             if let url = NSURL(string: trimmedEndpoint) {
                 if let host = url.host {
                     if let scheme = url.scheme {
-                        if scheme == "https" &&
-                            count(host) > 0 &&
-                            url.user == nil &&
-                            url.password == nil &&
-                            url.query == nil &&
-                            url.fragment == nil {
-                            return trimmedEndpoint
+                        if let path = url.path {
+                            if scheme == "https" &&
+                                count(host) > 0 &&
+                                path == alarmEndpointPath &&
+                                url.user == nil &&
+                                url.password == nil &&
+                                url.query == nil &&
+                                url.fragment == nil {
+                                return trimmedEndpoint
+                            }
                         }
                     }
                 }

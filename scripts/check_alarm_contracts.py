@@ -153,6 +153,24 @@ def check_alarm_endpoint(interface, extension_plist, failures):
         "InterfaceController must require a host on AlarmEndpointURL",
         failures,
     )
+    require_regex(
+        interface,
+        r"private\s+let\s+alarmEndpointPath\s*=\s*\"/alarm\"",
+        "alarm endpoint path must stay explicit as a named constant",
+        failures,
+    )
+    require_contains(
+        interface,
+        "url.path",
+        "InterfaceController must inspect the parsed AlarmEndpointURL path",
+        failures,
+    )
+    require_contains(
+        interface,
+        "path == alarmEndpointPath",
+        "InterfaceController must require AlarmEndpointURL to use the alarm path",
+        failures,
+    )
     require_contains(
         interface,
         "if let scheme = url.scheme",
@@ -243,6 +261,11 @@ def check_alarm_endpoint(interface, extension_plist, failures):
         and parsed_endpoint.query == ""
         and parsed_endpoint.fragment == "",
         "extension Info.plist AlarmEndpointURL placeholder must not include query strings or fragments",
+        failures,
+    )
+    require(
+        parsed_endpoint is not None and parsed_endpoint.path == "/alarm",
+        "extension Info.plist AlarmEndpointURL placeholder must use the /alarm path",
         failures,
     )
 

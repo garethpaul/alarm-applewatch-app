@@ -23,6 +23,7 @@ Priority:
 - Make the alarm endpoint behavior visible rather than hidden in source code
 - Require alarm endpoints to be parseable HTTPS URLs with hosts
 - Validate the parsed alarm endpoint scheme before network requests
+- Require alarm endpoints to stay scoped to the explicit `/alarm` path
 - Reject alarm endpoint URLs that embed credentials
 - Reject alarm endpoint URLs that carry query strings or fragments
 - Keep the WatchKit alarm-hour range explicit in code and static contracts

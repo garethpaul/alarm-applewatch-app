@@ -2,6 +2,9 @@
 
 ## 2026-06-09
 
+- Required parsed WatchKit alarm endpoint URLs to use the explicit `/alarm`
+  path before sending alarm requests.
+- Added static checker coverage for endpoint path validation.
 - Required the parsed WatchKit alarm endpoint scheme to be exactly HTTPS before
   sending alarm requests.
 - Added static checker coverage for parsed endpoint scheme validation.
