@@ -26,6 +26,7 @@ REQUIRED_FILES = [
     "Podfile",
     "Podfile.lock",
     "README.md",
+    ".github/workflows/check.yml",
 ]
 
 WATCH_APP_BUNDLE_ID = "com.requestlabs.Alarm.watchkitapp"
@@ -471,14 +472,44 @@ def check_dependency_and_project_contracts(project, podfile, podfile_lock, failu
     )
 
 
-def check_docs(readme, changes, endpoint_plan, placeholder_plan, failures):
+def check_ci(makefile, workflow, failures):
+    require_regex(
+        makefile,
+        r"^ci:\s+lint\s+test$",
+        "Makefile must expose deterministic lint and test CI checks",
+        failures,
+    )
+    require_contains(
+        workflow,
+        "permissions:\n  contents: read",
+        "CI workflow must use read-only repository permissions",
+        failures,
+    )
+    require_contains(
+        workflow,
+        "timeout-minutes: 5",
+        "CI workflow must have a bounded timeout",
+        failures,
+    )
+    require_contains(
+        workflow,
+        "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5",
+        "CI workflow must pin actions/checkout",
+        failures,
+    )
+    require_contains(workflow, "run: make ci", "CI workflow must run the shared CI target", failures)
+
+
+def check_docs(readme, changes, endpoint_plan, placeholder_plan, ci_plan, failures):
     require_contains(readme, "Alarm.xcworkspace", "README must direct maintainers to open the workspace", failures)
     require_contains(readme, "make check", "README must document local verification", failures)
+    require_contains(readme, "make ci", "README must document deterministic CI verification", failures)
     require_contains(readme, "AlarmEndpointURL", "README must document endpoint configuration", failures)
     require_contains(changes, "static contracts", "CHANGES must mention static contract coverage", failures)
     require_contains(endpoint_plan, "AlarmEndpointURL", "endpoint plan must document the plist-backed endpoint", failures)
     require_contains(placeholder_plan, "Status: Completed", "placeholder endpoint plan must be completed", failures)
     require_contains(placeholder_plan, "make check", "placeholder endpoint plan must record make check", failures)
+    require_contains(ci_plan, "Status: Completed", "CI baseline plan must be completed", failures)
 
 
 def main():
@@ -491,10 +522,13 @@ def main():
     project = read_text("Alarm.xcodeproj/project.pbxproj", failures)
     podfile = read_text("Podfile", failures)
     podfile_lock = read_text("Podfile.lock", failures)
+    makefile = read_text("Makefile", failures)
+    workflow = read_text(".github/workflows/check.yml", failures)
     readme = read_text("README.md", failures)
     changes = read_text("CHANGES.md", failures)
     endpoint_plan = read_text("docs/plans/2026-06-08-watchkit-endpoint-contracts.md", failures)
     placeholder_plan = read_text("docs/plans/2026-06-09-watchkit-endpoint-placeholder-host.md", failures)
+    ci_plan = read_text("docs/plans/2026-06-10-watchkit-ci-baseline.md", failures)
 
     app = read_plist("Alarm/Info.plist", failures)
     watch_app = read_plist("Alarm WatchKit App/Info.plist", failures)
@@ -507,7 +541,8 @@ def main():
     check_plist_contracts(app, watch_app, extension, tests, failures)
     check_push_payload(failures)
     check_dependency_and_project_contracts(project, podfile, podfile_lock, failures)
-    check_docs(readme, changes, endpoint_plan, placeholder_plan, failures)
+    check_ci(makefile, workflow, failures)
+    check_docs(readme, changes, endpoint_plan, placeholder_plan, ci_plan, failures)
 
     if failures:
         print("Alarm WatchKit contract check failed:")
