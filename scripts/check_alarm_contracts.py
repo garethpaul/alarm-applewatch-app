@@ -347,6 +347,37 @@ def check_watchkit_outlet_safety(interface, failures):
     )
 
 
+def check_alarm_request_lifecycle(interface, failures):
+    require_contains(
+        interface,
+        "private var alarmRequest: Request?",
+        "InterfaceController must retain at most one alarm request",
+        failures,
+    )
+    require_regex(
+        interface,
+        r"@IBAction\s+func\s+setAlarm\(\)\s*\{\s*"
+        r"alarmRequest\?\.cancel\(\)\s*alarmRequest\s*=\s*nil.*"
+        r"alarmRequest\s*=\s*Alamofire\.request\(\.GET,\s*endpoint,\s*"
+        r"parameters:\s*alarmParameters\(\)\)",
+        "setAlarm must cancel any prior request before retaining its replacement",
+        failures,
+    )
+    require_regex(
+        interface,
+        r"override\s+func\s+didDeactivate\(\)\s*\{.*"
+        r"alarmRequest\?\.cancel\(\)\s*alarmRequest\s*=\s*nil\s*"
+        r"super\.didDeactivate\(\)",
+        "didDeactivate must cancel and release the outstanding alarm request",
+        failures,
+    )
+    require(
+        interface.count("Alamofire.request(") == 1,
+        "InterfaceController must keep a single alarm request creation path",
+        failures,
+    )
+
+
 def check_plist_contracts(app, watch_app, extension, tests, failures):
     require_equal(app.get("CFBundlePackageType"), "APPL", "iOS app package type", failures)
     require_equal(
@@ -473,6 +504,12 @@ def check_dependency_and_project_contracts(project, podfile, podfile_lock, failu
 
 
 def check_ci(makefile, workflow, failures):
+    require_contains(
+        makefile,
+        "ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))",
+        "Makefile must resolve repository paths from its own location",
+        failures,
+    )
     require_regex(
         makefile,
         r"^ci:\s+lint\s+test$",
@@ -489,6 +526,18 @@ def check_ci(makefile, workflow, failures):
         workflow,
         "timeout-minutes: 5",
         "CI workflow must have a bounded timeout",
+        failures,
+    )
+    require_contains(
+        workflow,
+        "runs-on: ubuntu-24.04",
+        "CI workflow must use a fixed Ubuntu runner image",
+        failures,
+    )
+    require_contains(
+        workflow,
+        "cancel-in-progress: true",
+        "CI workflow must cancel superseded runs",
         failures,
     )
     require_contains(
@@ -556,6 +605,7 @@ def main():
     check_alarm_endpoint(interface, extension, failures)
     check_alarm_hour_bounds(interface, storyboard, failures)
     check_watchkit_outlet_safety(interface, failures)
+    check_alarm_request_lifecycle(interface, failures)
     check_plist_contracts(app, watch_app, extension, tests, failures)
     check_push_payload(failures)
     check_dependency_and_project_contracts(project, podfile, podfile_lock, failures)

@@ -74,6 +74,8 @@ execute the legacy WatchKit targets.
   `example.com` placeholder; configure real alarm hosts locally.
 - The WatchKit alarm slider and request code clamp alarm hours to the 5 through 11 range before displaying or sending `alarmTime`.
 - WatchKit outlets are optional and label updates use optional chaining so a disconnected legacy storyboard outlet does not crash the controller.
+- The WatchKit controller retains only the current alarm request. A replacement
+  request or controller deactivation cancels and releases outstanding work.
 - Alarm endpoint validation checks both the HTTPS text prefix and the parsed
   `NSURL.scheme` before sending a request.
 - Alarm endpoint validation checks the parsed URL path before sending a

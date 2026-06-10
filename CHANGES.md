@@ -2,6 +2,10 @@
 
 ## 2026-06-10
 
+- Retain one WatchKit alarm request at a time, cancelling prior submissions and
+  outstanding work when the interface deactivates.
+- Make repository checks location-independent and pin CI to Ubuntu 24.04 with
+  superseded-run cancellation.
 - Add a least-privilege GitHub Actions workflow for the deterministic static
   contract checks on Python 3.10, 3.12, and 3.14.
 - Add a dedicated `make ci` target so automation cannot silently pass by

@@ -30,6 +30,8 @@ Priority:
 - Keep the WatchKit alarm-hour range explicit in code and static contracts
 - Keep storyboard-backed outlet updates nil-safe while the legacy interface is
   preserved
+- Keep only one alarm submission in flight and cancel it when the watch
+  interface deactivates
 - Avoid changes that require unavailable Apple tooling without documenting them
 
 Next priorities:

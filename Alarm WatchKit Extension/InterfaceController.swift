@@ -64,6 +64,7 @@ func alarmEndpointURL() -> String? {
 class InterfaceController: WKInterfaceController {
     
     var wakeUp = 5
+    private var alarmRequest: Request?
     
     @IBOutlet weak var slider: WKInterfaceSlider?
     
@@ -75,8 +76,11 @@ class InterfaceController: WKInterfaceController {
     }
     
     @IBAction func setAlarm() {
+        alarmRequest?.cancel()
+        alarmRequest = nil
+
         if let endpoint = alarmEndpointURL() {
-            Alamofire.request(.GET, endpoint, parameters: alarmParameters())
+            alarmRequest = Alamofire.request(.GET, endpoint, parameters: alarmParameters())
         } else {
             NSLog("Alarm endpoint is not configured; skipping alarm request.")
         }
@@ -99,6 +103,8 @@ class InterfaceController: WKInterfaceController {
     
     override func didDeactivate() {
         // This method is called when watch view controller is no longer visible
+        alarmRequest?.cancel()
+        alarmRequest = nil
         super.didDeactivate()
     }
     
