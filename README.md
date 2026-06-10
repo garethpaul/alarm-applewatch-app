@@ -71,7 +71,8 @@ execute the legacy WatchKit targets.
 - No required secret or credential file was identified in the repository scan. If you add integrations later, keep secrets out of git.
 - The WatchKit extension reads `AlarmEndpointURL` from `Alarm WatchKit Extension/Info.plist`. Keep local or production endpoints HTTPS-only, parseable with a host, scoped to the `/alarm` path, and free of embedded credentials, query strings, or fragments.
 - The checked-in `AlarmEndpointURL` value must stay on the non-production
-  `example.com` placeholder; configure real alarm hosts locally.
+  `example.invalid` placeholder. Runtime validation rejects that sentinel, so
+  configure a real alarm host locally before requests can be sent.
 - The WatchKit alarm slider and request code clamp alarm hours to the 5 through 11 range before displaying or sending `alarmTime`.
 - WatchKit outlets are optional and label updates use optional chaining so a disconnected legacy storyboard outlet does not crash the controller.
 - The WatchKit controller retains only the current alarm request. A replacement

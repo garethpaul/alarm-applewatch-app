@@ -160,6 +160,18 @@ def check_alarm_endpoint(interface, extension_plist, failures):
         "alarm endpoint path must stay explicit as a named constant",
         failures,
     )
+    require_regex(
+        interface,
+        r'private\s+let\s+placeholderAlarmHost\s*=\s*"example\.invalid"',
+        "checked-in placeholder host must stay explicit in source",
+        failures,
+    )
+    require_contains(
+        interface,
+        "host != placeholderAlarmHost",
+        "InterfaceController must reject the checked-in placeholder host",
+        failures,
+    )
     require_contains(
         interface,
         "url.path",
@@ -251,8 +263,8 @@ def check_alarm_endpoint(interface, extension_plist, failures):
         failures,
     )
     require(
-        parsed_endpoint is not None and parsed_endpoint.hostname == "example.com",
-        "extension Info.plist AlarmEndpointURL placeholder must stay on example.com",
+        parsed_endpoint is not None and parsed_endpoint.hostname == "example.invalid",
+        "extension Info.plist AlarmEndpointURL placeholder must stay on example.invalid",
         failures,
     )
     require(
@@ -567,7 +579,7 @@ def check_ci(makefile, workflow, failures):
     require_contains(workflow, "run: make ci", "CI workflow must run the shared CI target", failures)
 
 
-def check_docs(readme, changes, endpoint_plan, placeholder_plan, ci_plan, failures):
+def check_docs(readme, changes, endpoint_plan, placeholder_plan, inert_placeholder_plan, ci_plan, failures):
     require_contains(readme, "Alarm.xcworkspace", "README must direct maintainers to open the workspace", failures)
     require_contains(readme, "make check", "README must document local verification", failures)
     require_contains(readme, "make ci", "README must document deterministic CI verification", failures)
@@ -576,6 +588,9 @@ def check_docs(readme, changes, endpoint_plan, placeholder_plan, ci_plan, failur
     require_contains(endpoint_plan, "AlarmEndpointURL", "endpoint plan must document the plist-backed endpoint", failures)
     require_contains(placeholder_plan, "Status: Completed", "placeholder endpoint plan must be completed", failures)
     require_contains(placeholder_plan, "make check", "placeholder endpoint plan must record make check", failures)
+    require_contains(inert_placeholder_plan, "Status: Completed", "inert placeholder plan must be completed", failures)
+    require_contains(inert_placeholder_plan, "make check", "inert placeholder plan must record make check", failures)
+    require_contains(readme, "example.invalid", "README must document the inert endpoint placeholder", failures)
     require_contains(ci_plan, "Status: Completed", "CI baseline plan must be completed", failures)
 
 
@@ -595,6 +610,7 @@ def main():
     changes = read_text("CHANGES.md", failures)
     endpoint_plan = read_text("docs/plans/2026-06-08-watchkit-endpoint-contracts.md", failures)
     placeholder_plan = read_text("docs/plans/2026-06-09-watchkit-endpoint-placeholder-host.md", failures)
+    inert_placeholder_plan = read_text("docs/plans/2026-06-10-watchkit-inert-endpoint-placeholder.md", failures)
     ci_plan = read_text("docs/plans/2026-06-10-watchkit-ci-baseline.md", failures)
 
     app = read_plist("Alarm/Info.plist", failures)
@@ -610,7 +626,7 @@ def main():
     check_push_payload(failures)
     check_dependency_and_project_contracts(project, podfile, podfile_lock, failures)
     check_ci(makefile, workflow, failures)
-    check_docs(readme, changes, endpoint_plan, placeholder_plan, ci_plan, failures)
+    check_docs(readme, changes, endpoint_plan, placeholder_plan, inert_placeholder_plan, ci_plan, failures)
 
     if failures:
         print("Alarm WatchKit contract check failed:")

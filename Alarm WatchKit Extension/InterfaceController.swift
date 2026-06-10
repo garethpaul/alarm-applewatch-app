@@ -11,6 +11,7 @@ import Alamofire
 
 private let alarmTimeParameter = "alarmTime"
 private let alarmEndpointPath = "/alarm"
+private let placeholderAlarmHost = "example.invalid"
 private let minimumAlarmHour = 5
 private let maximumAlarmHour = 11
 
@@ -44,6 +45,7 @@ func alarmEndpointURL() -> String? {
                         if let path = url.path {
                             if scheme == "https" &&
                                 count(host) > 0 &&
+                                host != placeholderAlarmHost &&
                                 path == alarmEndpointPath &&
                                 url.user == nil &&
                                 url.password == nil &&

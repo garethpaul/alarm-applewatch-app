@@ -10,6 +10,8 @@
   contract checks on Python 3.10, 3.12, and 3.14.
 - Add a dedicated `make ci` target so automation cannot silently pass by
   skipping an unavailable Xcode build.
+- Move the checked-in alarm endpoint to `example.invalid` and reject that
+  sentinel at runtime so an unconfigured build cannot submit alarm data.
 
 ## 2026-06-09
 
