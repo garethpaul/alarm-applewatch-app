@@ -1,4 +1,4 @@
-.PHONY: lint test build verify check
+.PHONY: lint test build ci verify check
 
 PYTHON ?= python3
 
@@ -14,6 +14,8 @@ build:
 	else \
 		echo "xcodebuild unavailable; skipping legacy Apple build"; \
 	fi
+
+ci: lint test
 
 verify: lint test build
 

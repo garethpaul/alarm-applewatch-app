@@ -1,5 +1,12 @@
 # Changes
 
+## 2026-06-10
+
+- Add a least-privilege GitHub Actions workflow for the deterministic static
+  contract checks.
+- Add a dedicated `make ci` target so automation cannot silently pass by
+  skipping an unavailable Xcode build.
+
 ## 2026-06-09
 
 - Required the checked-in WatchKit alarm endpoint placeholder to stay on
