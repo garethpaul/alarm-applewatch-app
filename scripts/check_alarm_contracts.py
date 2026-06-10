@@ -493,8 +493,26 @@ def check_ci(makefile, workflow, failures):
     )
     require_contains(
         workflow,
-        "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5",
+        "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10",
         "CI workflow must pin actions/checkout",
+        failures,
+    )
+    require_contains(
+        workflow,
+        "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405",
+        "CI workflow must pin actions/setup-python",
+        failures,
+    )
+    require_contains(
+        workflow,
+        'python-version: ["3.10", "3.12", "3.14"]',
+        "CI workflow must cover Python 3.10, 3.12, and 3.14",
+        failures,
+    )
+    require_contains(
+        workflow,
+        "workflow_dispatch:",
+        "CI workflow must support manual dispatch",
         failures,
     )
     require_contains(workflow, "run: make ci", "CI workflow must run the shared CI target", failures)

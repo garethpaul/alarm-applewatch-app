@@ -11,7 +11,9 @@ and push to `master` without presenting a Linux job as an Apple build.
 
 - CI runs the same lint and static contract commands available locally.
 - CI uses read-only repository permissions, a bounded timeout, and a pinned
-  checkout action.
+  checkout and Python setup actions.
+- CI runs the checker on Python 3.10, 3.12, and 3.14 and supports manual
+  maintenance dispatch.
 - The automation target does not succeed by skipping an unavailable Xcode build.
 - Documentation distinguishes deterministic CI from Xcode build and simulator
   validation.

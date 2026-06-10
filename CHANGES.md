@@ -3,7 +3,7 @@
 ## 2026-06-10
 
 - Add a least-privilege GitHub Actions workflow for the deterministic static
-  contract checks.
+  contract checks on Python 3.10, 3.12, and 3.14.
 - Add a dedicated `make ci` target so automation cannot silently pass by
   skipping an unavailable Xcode build.
 

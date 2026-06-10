@@ -54,7 +54,7 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 
 ## Testing and Verification
 
-- `make ci` - runs the dependency-free lint and static contract checks used by GitHub Actions
+- `make ci` - runs the dependency-free lint and static contract checks used by GitHub Actions on Python 3.10, 3.12, and 3.14
 - `make check` - runs dependency-free static contracts and attempts an Xcode build when `xcodebuild` is available
 - Xcode's test action or `xcodebuild test` with the appropriate scheme and destination
 
@@ -62,8 +62,9 @@ The static contracts cover endpoint configuration, WatchKit plist relationships,
 notification payload JSON, Xcode target types, and legacy CocoaPods pins. When
 the required SDK or runtime is unavailable, use static checks and source review
 first, then verify on a machine that has the matching platform toolchain.
-GitHub Actions intentionally runs `make ci` on Linux; it does not claim to compile
-or execute the legacy WatchKit targets.
+GitHub Actions intentionally runs `make ci` on Linux with pinned actions,
+read-only permissions, and manual dispatch; it does not claim to compile or
+execute the legacy WatchKit targets.
 
 ## Configuration and Secrets
 
