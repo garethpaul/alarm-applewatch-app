@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-12
+
+- Guarded WatchKit alarm-hour float conversion so `NaN`, infinities, and
+  extreme programmatic values clamp before reaching `Int` conversion.
+- Added static contracts and a completed plan for the safe conversion order.
+
 ## 2026-06-10
 
 - Retain one WatchKit alarm request at a time, cancelling prior submissions and

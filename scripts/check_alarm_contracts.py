@@ -23,6 +23,7 @@ REQUIRED_FILES = [
     "Alarm WatchKit App/Base.lproj/Interface.storyboard",
     "AlarmTests/AlarmTests.swift",
     "AlarmTests/Info.plist",
+    "docs/plans/2026-06-12-watchkit-nonfinite-alarm-hour.md",
     "Podfile",
     "Podfile.lock",
     "README.md",
@@ -306,6 +307,29 @@ def check_alarm_hour_bounds(interface, storyboard, failures):
         r"func\s+normalizedAlarmHour\(hour:\s*Int\)\s*->\s*Int\s*\{.*"
         r"hour\s*<\s*minimumAlarmHour.*hour\s*>\s*maximumAlarmHour",
         "InterfaceController must clamp alarm hours to the documented range",
+        failures,
+    )
+    float_normalizer_start = interface.find("func normalizedAlarmHour(value: Float)")
+    float_normalizer_end = interface.find(
+        "func alarmDisplayText", float_normalizer_start
+    )
+    float_normalizer = (
+        interface[float_normalizer_start:float_normalizer_end]
+        if float_normalizer_start >= 0 and float_normalizer_end >= 0
+        else ""
+    )
+    require(
+        "if value != value" in float_normalizer
+        and "if value < Float(minimumAlarmHour)" in float_normalizer
+        and "if value > Float(maximumAlarmHour)" in float_normalizer
+        and "normalizedAlarmHour(Int(value))" in float_normalizer
+        and float_normalizer.index("if value != value")
+        < float_normalizer.index("normalizedAlarmHour(Int(value))")
+        and float_normalizer.index("if value < Float(minimumAlarmHour)")
+        < float_normalizer.index("normalizedAlarmHour(Int(value))")
+        and float_normalizer.index("if value > Float(maximumAlarmHour)")
+        < float_normalizer.index("normalizedAlarmHour(Int(value))"),
+        "Float alarm values must reject NaN and clamp extremes before Int conversion",
         failures,
     )
     require_contains(
@@ -612,6 +636,9 @@ def main():
     placeholder_plan = read_text("docs/plans/2026-06-09-watchkit-endpoint-placeholder-host.md", failures)
     inert_placeholder_plan = read_text("docs/plans/2026-06-10-watchkit-inert-endpoint-placeholder.md", failures)
     ci_plan = read_text("docs/plans/2026-06-10-watchkit-ci-baseline.md", failures)
+    nonfinite_alarm_plan = read_text(
+        "docs/plans/2026-06-12-watchkit-nonfinite-alarm-hour.md", failures
+    )
 
     app = read_plist("Alarm/Info.plist", failures)
     watch_app = read_plist("Alarm WatchKit App/Info.plist", failures)
@@ -627,6 +654,18 @@ def main():
     check_dependency_and_project_contracts(project, podfile, podfile_lock, failures)
     check_ci(makefile, workflow, failures)
     check_docs(readme, changes, endpoint_plan, placeholder_plan, inert_placeholder_plan, ci_plan, failures)
+    require_contains(
+        nonfinite_alarm_plan,
+        "Status: Completed",
+        "non-finite alarm-hour plan must be completed",
+        failures,
+    )
+    require_contains(
+        nonfinite_alarm_plan,
+        "make check",
+        "non-finite alarm-hour plan must record make check",
+        failures,
+    )
 
     if failures:
         print("Alarm WatchKit contract check failed:")

@@ -32,6 +32,8 @@ Helpful reports include:
 - Dependency manifests detected: Podfile, Podfile.lock. Dependency updates should preserve lockfiles when present and avoid introducing packages without a clear maintenance reason.
 - Alarm endpoint configuration should remain HTTPS, credential-free, and scoped
   to the explicit `/alarm` path.
+- Alarm-hour inputs must be bounded while still represented as floats so
+  non-finite or extreme values cannot trap during integer conversion.
 
 ## Mobile Privacy Notes
 

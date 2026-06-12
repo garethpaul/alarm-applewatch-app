@@ -28,6 +28,18 @@ func normalizedAlarmHour(hour: Int) -> Int {
 }
 
 func normalizedAlarmHour(value: Float) -> Int {
+    if value != value {
+        return minimumAlarmHour
+    }
+
+    if value < Float(minimumAlarmHour) {
+        return minimumAlarmHour
+    }
+
+    if value > Float(maximumAlarmHour) {
+        return maximumAlarmHour
+    }
+
     return normalizedAlarmHour(Int(value))
 }
 

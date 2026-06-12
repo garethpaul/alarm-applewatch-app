@@ -73,7 +73,9 @@ execute the legacy WatchKit targets.
 - The checked-in `AlarmEndpointURL` value must stay on the non-production
   `example.invalid` placeholder. Runtime validation rejects that sentinel, so
   configure a real alarm host locally before requests can be sent.
-- The WatchKit alarm slider and request code clamp alarm hours to the 5 through 11 range before displaying or sending `alarmTime`.
+- The WatchKit alarm slider and request code clamp alarm hours to the 5 through
+  11 range before integer conversion, displaying, or sending `alarmTime`;
+  non-finite programmatic values fall back safely.
 - WatchKit outlets are optional and label updates use optional chaining so a disconnected legacy storyboard outlet does not crash the controller.
 - The WatchKit controller retains only the current alarm request. A replacement
   request or controller deactivation cancels and releases outstanding work.
@@ -95,6 +97,8 @@ execute the legacy WatchKit targets.
   for the current endpoint configuration baseline.
 - See `docs/plans/2026-06-09-watchkit-alarm-hour-bounds.md` for the
   alarm-hour bounds contract.
+- See `docs/plans/2026-06-12-watchkit-nonfinite-alarm-hour.md` for safe
+  non-finite and extreme float normalization.
 - See `docs/plans/2026-06-09-watchkit-outlet-safety.md` for the nil-safe
   outlet contract.
 - See `docs/plans/2026-06-09-watchkit-endpoint-url-shape.md` for the
