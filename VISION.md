@@ -26,10 +26,14 @@ Priority:
 - Require alarm endpoints to stay scoped to the explicit `/alarm` path
 - Reject alarm endpoint URLs that embed credentials
 - Reject alarm endpoint URLs that carry query strings or fragments
-- Keep the checked-in alarm endpoint on a non-production placeholder host
+- Keep the checked-in alarm endpoint on a non-resolving placeholder host and
+  reject that sentinel at runtime
 - Keep the WatchKit alarm-hour range explicit in code and static contracts
+- Clamp non-finite and extreme alarm-hour values before integer conversion
 - Keep storyboard-backed outlet updates nil-safe while the legacy interface is
   preserved
+- Keep only one alarm submission in flight and cancel it when the watch
+  interface deactivates
 - Avoid changes that require unavailable Apple tooling without documenting them
 
 Next priorities:

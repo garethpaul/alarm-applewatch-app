@@ -7,11 +7,13 @@ import plistlib
 import re
 import sys
 from urllib.parse import urlparse
+import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 REQUIRED_FILES = [
+    "AGENTS.md",
     "Alarm.xcworkspace/contents.xcworkspacedata",
     "Alarm.xcodeproj/project.pbxproj",
     "Alarm/Info.plist",
@@ -23,6 +25,9 @@ REQUIRED_FILES = [
     "Alarm WatchKit App/Base.lproj/Interface.storyboard",
     "AlarmTests/AlarmTests.swift",
     "AlarmTests/Info.plist",
+    "docs/plans/2026-06-12-watchkit-nonfinite-alarm-hour.md",
+    "docs/device-preview.svg",
+    "docs/readme-overview.svg",
     "Podfile",
     "Podfile.lock",
     "README.md",
@@ -52,6 +57,20 @@ def read_plist(relative_path, failures):
     except Exception as exc:
         failures.append(f"{relative_path} is not readable as a plist: {exc}")
         return {}
+
+
+def check_svg(relative_path, failures):
+    path = ROOT / relative_path
+    if not path.exists():
+        failures.append(f"{relative_path} is missing")
+        return
+    try:
+        root = ET.parse(path).getroot()
+    except ET.ParseError as exc:
+        failures.append(f"{relative_path} is not valid XML: {exc}")
+        return
+    require(root.tag.endswith("svg"), f"{relative_path} must have an SVG root element", failures)
+    require("viewBox" in root.attrib, f"{relative_path} must define a viewBox", failures)
 
 
 def require(condition, message, failures):
@@ -160,6 +179,18 @@ def check_alarm_endpoint(interface, extension_plist, failures):
         "alarm endpoint path must stay explicit as a named constant",
         failures,
     )
+    require_regex(
+        interface,
+        r'private\s+let\s+placeholderAlarmHost\s*=\s*"example\.invalid"',
+        "checked-in placeholder host must stay explicit in source",
+        failures,
+    )
+    require_contains(
+        interface,
+        "host != placeholderAlarmHost",
+        "InterfaceController must reject the checked-in placeholder host",
+        failures,
+    )
     require_contains(
         interface,
         "url.path",
@@ -251,8 +282,8 @@ def check_alarm_endpoint(interface, extension_plist, failures):
         failures,
     )
     require(
-        parsed_endpoint is not None and parsed_endpoint.hostname == "example.com",
-        "extension Info.plist AlarmEndpointURL placeholder must stay on example.com",
+        parsed_endpoint is not None and parsed_endpoint.hostname == "example.invalid",
+        "extension Info.plist AlarmEndpointURL placeholder must stay on example.invalid",
         failures,
     )
     require(
@@ -294,6 +325,29 @@ def check_alarm_hour_bounds(interface, storyboard, failures):
         r"func\s+normalizedAlarmHour\(hour:\s*Int\)\s*->\s*Int\s*\{.*"
         r"hour\s*<\s*minimumAlarmHour.*hour\s*>\s*maximumAlarmHour",
         "InterfaceController must clamp alarm hours to the documented range",
+        failures,
+    )
+    float_normalizer_start = interface.find("func normalizedAlarmHour(value: Float)")
+    float_normalizer_end = interface.find(
+        "func alarmDisplayText", float_normalizer_start
+    )
+    float_normalizer = (
+        interface[float_normalizer_start:float_normalizer_end]
+        if float_normalizer_start >= 0 and float_normalizer_end >= 0
+        else ""
+    )
+    require(
+        "if value != value" in float_normalizer
+        and "if value < Float(minimumAlarmHour)" in float_normalizer
+        and "if value > Float(maximumAlarmHour)" in float_normalizer
+        and "normalizedAlarmHour(Int(value))" in float_normalizer
+        and float_normalizer.index("if value != value")
+        < float_normalizer.index("normalizedAlarmHour(Int(value))")
+        and float_normalizer.index("if value < Float(minimumAlarmHour)")
+        < float_normalizer.index("normalizedAlarmHour(Int(value))")
+        and float_normalizer.index("if value > Float(maximumAlarmHour)")
+        < float_normalizer.index("normalizedAlarmHour(Int(value))"),
+        "Float alarm values must reject NaN and clamp extremes before Int conversion",
         failures,
     )
     require_contains(
@@ -343,6 +397,37 @@ def check_watchkit_outlet_safety(interface, failures):
     require(
         interface.count("alarmValue?.setText(alarmDisplayText(wakeUp))") >= 2,
         "all alarm label updates must use optional chaining",
+        failures,
+    )
+
+
+def check_alarm_request_lifecycle(interface, failures):
+    require_contains(
+        interface,
+        "private var alarmRequest: Request?",
+        "InterfaceController must retain at most one alarm request",
+        failures,
+    )
+    require_regex(
+        interface,
+        r"@IBAction\s+func\s+setAlarm\(\)\s*\{\s*"
+        r"alarmRequest\?\.cancel\(\)\s*alarmRequest\s*=\s*nil.*"
+        r"alarmRequest\s*=\s*Alamofire\.request\(\.GET,\s*endpoint,\s*"
+        r"parameters:\s*alarmParameters\(\)\)",
+        "setAlarm must cancel any prior request before retaining its replacement",
+        failures,
+    )
+    require_regex(
+        interface,
+        r"override\s+func\s+didDeactivate\(\)\s*\{.*"
+        r"alarmRequest\?\.cancel\(\)\s*alarmRequest\s*=\s*nil\s*"
+        r"super\.didDeactivate\(\)",
+        "didDeactivate must cancel and release the outstanding alarm request",
+        failures,
+    )
+    require(
+        interface.count("Alamofire.request(") == 1,
+        "InterfaceController must keep a single alarm request creation path",
         failures,
     )
 
@@ -473,18 +558,32 @@ def check_dependency_and_project_contracts(project, podfile, podfile_lock, failu
 
 
 def check_ci(makefile, workflow, failures):
+    require_contains(
+        makefile,
+        "ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))",
+        "Makefile must resolve repository paths from its own location",
+        failures,
+    )
     require_regex(
         makefile,
         r"^ci:\s+lint\s+test$",
         "Makefile must expose deterministic lint and test CI checks",
         failures,
     )
-    require_contains(
+    ci_target = re.search(r"^ci:[^\n]*(?:\n\t[^\n]*)*", makefile, re.MULTILINE)
+    require(
+        ci_target is not None and "xcodebuild" not in ci_target.group(0),
+        "Makefile CI target must not invoke xcodebuild",
+        failures,
+    )
+    require_regex(
         workflow,
-        "permissions:\n  contents: read",
+        r"^permissions:\s*\n  contents: read\s*\n\s*^concurrency:",
         "CI workflow must use read-only repository permissions",
         failures,
     )
+    require_contains(workflow, "pull_request:", "CI workflow must run for pull requests", failures)
+    require_contains(workflow, "push:", "CI workflow must run for pushes", failures)
     require_contains(
         workflow,
         "timeout-minutes: 5",
@@ -493,14 +592,67 @@ def check_ci(makefile, workflow, failures):
     )
     require_contains(
         workflow,
-        "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5",
+        "runs-on: ubuntu-24.04",
+        "CI workflow must use a fixed Ubuntu runner image",
+        failures,
+    )
+    require_contains(
+        workflow,
+        "cancel-in-progress: true",
+        "CI workflow must cancel superseded runs",
+        failures,
+    )
+    require_contains(
+        workflow,
+        "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10",
         "CI workflow must pin actions/checkout",
+        failures,
+    )
+    require_contains(
+        workflow,
+        "persist-credentials: false",
+        "CI workflow must not persist checkout credentials",
+        failures,
+    )
+    require_contains(
+        workflow,
+        "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405",
+        "CI workflow must pin actions/setup-python",
+        failures,
+    )
+    require_contains(
+        workflow,
+        'python-version: ["3.10", "3.12", "3.14"]',
+        "CI workflow must cover Python 3.10, 3.12, and 3.14",
+        failures,
+    )
+    require_contains(
+        workflow,
+        "workflow_dispatch:",
+        "CI workflow must support manual dispatch",
+        failures,
+    )
+    require(
+        "pull_request_target:" not in workflow,
+        "CI workflow must not use pull_request_target",
+        failures,
+    )
+    action_uses = re.findall(r"^\s*-?\s*uses:\s*([^\s#]+)", workflow, re.MULTILINE)
+    require_equal(
+        action_uses,
+        [
+            "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10",
+            "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405",
+        ],
+        "CI workflow must use only the reviewed pinned actions",
         failures,
     )
     require_contains(workflow, "run: make ci", "CI workflow must run the shared CI target", failures)
 
 
-def check_docs(readme, changes, endpoint_plan, placeholder_plan, ci_plan, failures):
+def check_docs(readme, changes, endpoint_plan, placeholder_plan, inert_placeholder_plan, ci_plan, failures):
+    require_contains(readme, "docs/readme-overview.svg", "README must embed the project overview", failures)
+    require_contains(readme, "docs/device-preview.svg", "README must embed the device preview", failures)
     require_contains(readme, "Alarm.xcworkspace", "README must direct maintainers to open the workspace", failures)
     require_contains(readme, "make check", "README must document local verification", failures)
     require_contains(readme, "make ci", "README must document deterministic CI verification", failures)
@@ -509,6 +661,9 @@ def check_docs(readme, changes, endpoint_plan, placeholder_plan, ci_plan, failur
     require_contains(endpoint_plan, "AlarmEndpointURL", "endpoint plan must document the plist-backed endpoint", failures)
     require_contains(placeholder_plan, "Status: Completed", "placeholder endpoint plan must be completed", failures)
     require_contains(placeholder_plan, "make check", "placeholder endpoint plan must record make check", failures)
+    require_contains(inert_placeholder_plan, "Status: Completed", "inert placeholder plan must be completed", failures)
+    require_contains(inert_placeholder_plan, "make check", "inert placeholder plan must record make check", failures)
+    require_contains(readme, "example.invalid", "README must document the inert endpoint placeholder", failures)
     require_contains(ci_plan, "Status: Completed", "CI baseline plan must be completed", failures)
 
 
@@ -516,6 +671,8 @@ def main():
     failures = []
 
     check_required_files(failures)
+    check_svg("docs/readme-overview.svg", failures)
+    check_svg("docs/device-preview.svg", failures)
 
     interface = read_text("Alarm WatchKit Extension/InterfaceController.swift", failures)
     storyboard = read_text("Alarm WatchKit App/Base.lproj/Interface.storyboard", failures)
@@ -528,7 +685,11 @@ def main():
     changes = read_text("CHANGES.md", failures)
     endpoint_plan = read_text("docs/plans/2026-06-08-watchkit-endpoint-contracts.md", failures)
     placeholder_plan = read_text("docs/plans/2026-06-09-watchkit-endpoint-placeholder-host.md", failures)
+    inert_placeholder_plan = read_text("docs/plans/2026-06-10-watchkit-inert-endpoint-placeholder.md", failures)
     ci_plan = read_text("docs/plans/2026-06-10-watchkit-ci-baseline.md", failures)
+    nonfinite_alarm_plan = read_text(
+        "docs/plans/2026-06-12-watchkit-nonfinite-alarm-hour.md", failures
+    )
 
     app = read_plist("Alarm/Info.plist", failures)
     watch_app = read_plist("Alarm WatchKit App/Info.plist", failures)
@@ -538,11 +699,24 @@ def main():
     check_alarm_endpoint(interface, extension, failures)
     check_alarm_hour_bounds(interface, storyboard, failures)
     check_watchkit_outlet_safety(interface, failures)
+    check_alarm_request_lifecycle(interface, failures)
     check_plist_contracts(app, watch_app, extension, tests, failures)
     check_push_payload(failures)
     check_dependency_and_project_contracts(project, podfile, podfile_lock, failures)
     check_ci(makefile, workflow, failures)
-    check_docs(readme, changes, endpoint_plan, placeholder_plan, ci_plan, failures)
+    check_docs(readme, changes, endpoint_plan, placeholder_plan, inert_placeholder_plan, ci_plan, failures)
+    require_contains(
+        nonfinite_alarm_plan,
+        "Status: Completed",
+        "non-finite alarm-hour plan must be completed",
+        failures,
+    )
+    require_contains(
+        nonfinite_alarm_plan,
+        "make check",
+        "non-finite alarm-hour plan must record make check",
+        failures,
+    )
 
     if failures:
         print("Alarm WatchKit contract check failed:")

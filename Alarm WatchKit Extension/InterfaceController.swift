@@ -11,6 +11,7 @@ import Alamofire
 
 private let alarmTimeParameter = "alarmTime"
 private let alarmEndpointPath = "/alarm"
+private let placeholderAlarmHost = "example.invalid"
 private let minimumAlarmHour = 5
 private let maximumAlarmHour = 11
 
@@ -27,6 +28,18 @@ func normalizedAlarmHour(hour: Int) -> Int {
 }
 
 func normalizedAlarmHour(value: Float) -> Int {
+    if value != value {
+        return minimumAlarmHour
+    }
+
+    if value < Float(minimumAlarmHour) {
+        return minimumAlarmHour
+    }
+
+    if value > Float(maximumAlarmHour) {
+        return maximumAlarmHour
+    }
+
     return normalizedAlarmHour(Int(value))
 }
 
@@ -44,6 +57,7 @@ func alarmEndpointURL() -> String? {
                         if let path = url.path {
                             if scheme == "https" &&
                                 count(host) > 0 &&
+                                host != placeholderAlarmHost &&
                                 path == alarmEndpointPath &&
                                 url.user == nil &&
                                 url.password == nil &&
@@ -64,6 +78,7 @@ func alarmEndpointURL() -> String? {
 class InterfaceController: WKInterfaceController {
     
     var wakeUp = 5
+    private var alarmRequest: Request?
     
     @IBOutlet weak var slider: WKInterfaceSlider?
     
@@ -75,8 +90,11 @@ class InterfaceController: WKInterfaceController {
     }
     
     @IBAction func setAlarm() {
+        alarmRequest?.cancel()
+        alarmRequest = nil
+
         if let endpoint = alarmEndpointURL() {
-            Alamofire.request(.GET, endpoint, parameters: alarmParameters())
+            alarmRequest = Alamofire.request(.GET, endpoint, parameters: alarmParameters())
         } else {
             NSLog("Alarm endpoint is not configured; skipping alarm request.")
         }
@@ -99,6 +117,8 @@ class InterfaceController: WKInterfaceController {
     
     override func didDeactivate() {
         // This method is called when watch view controller is no longer visible
+        alarmRequest?.cancel()
+        alarmRequest = nil
         super.didDeactivate()
     }
     

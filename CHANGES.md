@@ -1,11 +1,23 @@
 # Changes
 
+## 2026-06-12
+
+- Guarded WatchKit alarm-hour float conversion so `NaN`, infinities, and
+  extreme programmatic values clamp before reaching `Int` conversion.
+- Added static contracts and a completed plan for the safe conversion order.
+
 ## 2026-06-10
 
+- Retain one WatchKit alarm request at a time, cancelling prior submissions and
+  outstanding work when the interface deactivates.
+- Make repository checks location-independent and pin CI to Ubuntu 24.04 with
+  superseded-run cancellation.
 - Add a least-privilege GitHub Actions workflow for the deterministic static
-  contract checks.
+  contract checks on Python 3.10, 3.12, and 3.14.
 - Add a dedicated `make ci` target so automation cannot silently pass by
   skipping an unavailable Xcode build.
+- Move the checked-in alarm endpoint to `example.invalid` and reject that
+  sentinel at runtime so an unconfigured build cannot submit alarm data.
 
 ## 2026-06-09
 
