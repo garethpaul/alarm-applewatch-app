@@ -12,6 +12,8 @@ and push to `master` without presenting a Linux job as an Apple build.
 - CI runs the same lint and static contract commands available locally.
 - CI uses read-only repository permissions, a bounded timeout, pinned checkout
   and Python setup actions, and does not persist checkout credentials.
+- The single disabled checkout credential setting remains attached to the
+  checkout action rather than appearing or being overridden elsewhere.
 - CI runs the checker on Python 3.10, 3.12, and 3.14 and supports manual
   maintenance dispatch.
 - The automation target does not succeed by skipping an unavailable Xcode build.

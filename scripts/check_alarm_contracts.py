@@ -95,6 +95,25 @@ def require_regex(text, pattern, message, failures):
     )
 
 
+def workflow_action_block(workflow, action):
+    lines = workflow.splitlines()
+    action_line = f"uses: {action}"
+
+    for index, line in enumerate(lines):
+        stripped_line = line.strip()
+        if stripped_line == action_line or stripped_line.startswith(f"{action_line} #"):
+            indentation = len(line) - len(line.lstrip())
+            block = [line]
+            for following_line in lines[index + 1 :]:
+                following_indentation = len(following_line) - len(following_line.lstrip())
+                if following_line.lstrip().startswith("- ") and following_indentation <= indentation:
+                    break
+                block.append(following_line)
+            return "\n".join(block)
+
+    return ""
+
+
 def require_no_arbitrary_loads(plist, label, failures):
     def walk(value):
         if isinstance(value, dict):
@@ -558,6 +577,7 @@ def check_dependency_and_project_contracts(project, podfile, podfile_lock, failu
 
 
 def check_ci(makefile, workflow, failures):
+    checkout_action = "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10"
     require_contains(
         makefile,
         "ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))",
@@ -604,7 +624,7 @@ def check_ci(makefile, workflow, failures):
     )
     require_contains(
         workflow,
-        "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10",
+        checkout_action,
         "CI workflow must pin actions/checkout",
         failures,
     )
@@ -612,6 +632,24 @@ def check_ci(makefile, workflow, failures):
         workflow,
         "persist-credentials: false",
         "CI workflow must not persist checkout credentials",
+        failures,
+    )
+    require_equal(
+        workflow.count("persist-credentials:"),
+        1,
+        "CI workflow must configure checkout credential persistence exactly once",
+        failures,
+    )
+    require(
+        "persist-credentials: true" not in workflow,
+        "CI workflow must never enable checkout credential persistence",
+        failures,
+    )
+    checkout_step = workflow_action_block(workflow, checkout_action)
+    require_contains(
+        checkout_step,
+        "\n        with:\n          persist-credentials: false",
+        "checkout step must disable credential persistence in its with block",
         failures,
     )
     require_contains(
@@ -641,7 +679,7 @@ def check_ci(makefile, workflow, failures):
     require_equal(
         action_uses,
         [
-            "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10",
+            checkout_action,
             "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405",
         ],
         "CI workflow must use only the reviewed pinned actions",

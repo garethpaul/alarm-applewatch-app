@@ -5,6 +5,8 @@
 - Guarded WatchKit alarm-hour float conversion so `NaN`, infinities, and
   extreme programmatic values clamp before reaching `Int` conversion.
 - Added static contracts and a completed plan for the safe conversion order.
+- Bound the single disabled checkout credential setting to the checkout action
+  so moving or overriding it cannot satisfy the CI safety contract.
 
 ## 2026-06-10
 
