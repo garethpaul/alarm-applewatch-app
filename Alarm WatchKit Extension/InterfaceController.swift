@@ -51,6 +51,12 @@ func canonicalAlarmHost(host: String) -> String {
     return host.lowercaseString.stringByTrimmingCharactersInSet(NSCharacterSet(charactersInString: "."))
 }
 
+func isPlaceholderAlarmHost(host: String) -> Bool {
+    let canonicalHost = canonicalAlarmHost(host)
+    return canonicalHost == placeholderAlarmHost ||
+        canonicalHost.hasSuffix("." + placeholderAlarmHost)
+}
+
 func alarmEndpointURL() -> String? {
     if let endpoint = NSBundle.mainBundle().objectForInfoDictionaryKey("AlarmEndpointURL") as? String {
         let trimmedEndpoint = endpoint.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
@@ -61,7 +67,7 @@ func alarmEndpointURL() -> String? {
                         if let path = url.path {
                             if scheme == "https" &&
                                 count(host) > 0 &&
-                                canonicalAlarmHost(host) != placeholderAlarmHost &&
+                                !isPlaceholderAlarmHost(host) &&
                                 path == alarmEndpointPath &&
                                 url.user == nil &&
                                 url.password == nil &&

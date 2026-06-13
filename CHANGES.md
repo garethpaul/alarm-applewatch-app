@@ -9,6 +9,9 @@
 - Changed the state-changing alarm submission from GET to POST so `alarmTime`
   is not encoded into request URLs.
 - Added portable method, documentation, and completed-plan contracts.
+- Rejected the full `example.invalid` placeholder subdomain namespace while
+  preserving unrelated hostname near matches.
+- Added mutation-sensitive contracts and guidance for placeholder subdomains.
 
 ## 2026-06-12
 

@@ -217,12 +217,42 @@ def check_alarm_endpoint(interface, extension_plist, failures):
     )
     require_contains(
         interface,
-        "canonicalAlarmHost(host) != placeholderAlarmHost",
-        "InterfaceController must reject equivalent checked-in placeholder hosts",
+        "func isPlaceholderAlarmHost(host: String) -> Bool",
+        "InterfaceController must classify reserved placeholder hosts",
+        failures,
+    )
+    require_contains(
+        interface,
+        "let canonicalHost = canonicalAlarmHost(host)",
+        "placeholder classification must use the canonical alarm host",
+        failures,
+    )
+    require_contains(
+        interface,
+        "canonicalHost == placeholderAlarmHost",
+        "placeholder classification must reject the exact reserved host",
+        failures,
+    )
+    require_contains(
+        interface,
+        'canonicalHost.hasSuffix("." + placeholderAlarmHost)',
+        "placeholder classification must reject dot-delimited reserved subdomains",
         failures,
     )
     require(
-        "host != placeholderAlarmHost" not in interface,
+        'canonicalHost.hasSuffix(placeholderAlarmHost)' not in interface,
+        "placeholder suffix matching must preserve the DNS label delimiter",
+        failures,
+    )
+    require_contains(
+        interface,
+        "!isPlaceholderAlarmHost(host)",
+        "InterfaceController must reject classified placeholder hosts before requests",
+        failures,
+    )
+    require(
+        "host != placeholderAlarmHost" not in interface
+        and "canonicalAlarmHost(host) != placeholderAlarmHost" not in interface,
         "InterfaceController must not compare the raw alarm host with the placeholder",
         failures,
     )
@@ -766,6 +796,7 @@ def main():
     workflow = read_text(".github/workflows/check.yml", failures)
     readme = read_text("README.md", failures)
     security = read_text("SECURITY.md", failures)
+    vision = read_text("VISION.md", failures)
     changes = read_text("CHANGES.md", failures)
     endpoint_plan = read_text("docs/plans/2026-06-08-watchkit-endpoint-contracts.md", failures)
     placeholder_plan = read_text("docs/plans/2026-06-09-watchkit-endpoint-placeholder-host.md", failures)
@@ -780,6 +811,9 @@ def main():
     )
     post_submission_plan = read_text(
         "docs/plans/2026-06-13-watchkit-post-alarm-submission.md", failures
+    )
+    placeholder_suffix_plan = read_text(
+        "docs/plans/2026-06-13-watchkit-placeholder-domain-suffix.md", failures
     )
 
     app = read_plist("Alarm/Info.plist", failures)
@@ -818,6 +852,42 @@ def main():
         post_submission_plan,
         "Status: Completed",
         "POST alarm-submission plan must be completed",
+        failures,
+    )
+    require_contains(
+        placeholder_suffix_plan,
+        "Status: Completed",
+        "placeholder-domain suffix plan must be completed",
+        failures,
+    )
+    require_contains(
+        placeholder_suffix_plan,
+        "hostile mutations",
+        "placeholder-domain suffix plan must record hostile mutation evidence",
+        failures,
+    )
+    require_contains(
+        readme,
+        "subdomains beneath `example.invalid`",
+        "README must document reserved placeholder subdomain rejection",
+        failures,
+    )
+    require_contains(
+        security,
+        "reserved placeholder domain",
+        "security guidance must document the reserved placeholder domain boundary",
+        failures,
+    )
+    require_contains(
+        vision,
+        "reserved placeholder subdomains",
+        "vision must preserve reserved placeholder subdomain rejection",
+        failures,
+    )
+    require_contains(
+        changes,
+        "placeholder subdomains",
+        "changes must record placeholder subdomain rejection",
         failures,
     )
     require_contains(

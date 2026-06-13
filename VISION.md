@@ -28,6 +28,8 @@ Priority:
 - Reject alarm endpoint URLs that carry query strings or fragments
 - Keep the checked-in alarm endpoint on a non-resolving placeholder host and
   reject that sentinel at runtime
+- Reject reserved placeholder subdomains without treating unrelated suffix
+  near matches as placeholders
 - Keep the WatchKit alarm-hour range explicit in code and static contracts
 - Clamp non-finite and extreme alarm-hour values before integer conversion
 - Keep storyboard-backed outlet updates nil-safe while the legacy interface is

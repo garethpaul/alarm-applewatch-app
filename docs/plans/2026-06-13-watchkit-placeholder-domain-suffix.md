@@ -1,6 +1,6 @@
 # WatchKit Placeholder Domain Suffix
 
-Status: Planned
+Status: Completed
 
 ## Context
 
@@ -66,3 +66,16 @@ checks without claiming unavailable Xcode or device coverage.
 
 - RFC 2606, Reserved Top Level DNS Names:
   https://www.rfc-editor.org/rfc/rfc2606
+
+## Verification
+
+- The focused checker initially reached only the expected incomplete-plan
+  assertion after implementation and documentation were added.
+- Six focused hostile mutations were rejected: exact placeholder removal,
+  reserved-subdomain removal, DNS-label delimiter removal, canonicalization
+  removal, predicate bypass, and completed-plan rollback.
+- Local and isolated external-directory `make check` passed Python compilation
+  and every SDK-free contract; both truthfully skipped the legacy Apple build
+  because `xcodebuild` is unavailable on this Linux host.
+- `git diff --check`, generated-artifact inspection, and credential-shaped
+  added-line scans passed. Hosted exact-head evidence remains pending push.
