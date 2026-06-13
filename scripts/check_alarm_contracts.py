@@ -28,6 +28,7 @@ REQUIRED_FILES = [
     "docs/plans/2026-06-12-watchkit-nonfinite-alarm-hour.md",
     "docs/plans/2026-06-13-watchkit-placeholder-host-canonicalization.md",
     "docs/plans/2026-06-13-watchkit-post-alarm-submission.md",
+    "docs/plans/2026-06-13-watchkit-endpoint-scheme-canonicalization.md",
     "docs/device-preview.svg",
     "docs/readme-overview.svg",
     "Podfile",
@@ -177,10 +178,9 @@ def check_alarm_endpoint(interface, extension_plist, failures):
         "alarm endpoint must be trimmed before validation",
         failures,
     )
-    require_contains(
-        interface,
-        'hasPrefix("https://")',
-        "InterfaceController must require HTTPS alarm endpoints",
+    require(
+        'hasPrefix("https://")' not in interface,
+        "InterfaceController must not use a case-sensitive raw HTTPS prefix gate",
         failures,
     )
     require_contains(
@@ -193,6 +193,13 @@ def check_alarm_endpoint(interface, extension_plist, failures):
         interface,
         "url.host",
         "InterfaceController must require a host on AlarmEndpointURL",
+        failures,
+    )
+    require_regex(
+        interface,
+        r"func\s+canonicalAlarmScheme\(scheme:\s*String\)\s*->\s*String\s*\{.*"
+        r"return\s+scheme\.lowercaseString",
+        "InterfaceController must canonicalize parsed alarm endpoint schemes",
         failures,
     )
     require_regex(
@@ -276,8 +283,8 @@ def check_alarm_endpoint(interface, extension_plist, failures):
     )
     require_contains(
         interface,
-        'scheme == "https"',
-        "InterfaceController must require the parsed AlarmEndpointURL scheme to be HTTPS",
+        'canonicalAlarmScheme(scheme) == "https"',
+        "InterfaceController must require the canonical parsed AlarmEndpointURL scheme to be HTTPS",
         failures,
     )
     require_contains(
@@ -815,6 +822,10 @@ def main():
     placeholder_suffix_plan = read_text(
         "docs/plans/2026-06-13-watchkit-placeholder-domain-suffix.md", failures
     )
+    scheme_canonicalization_plan = read_text(
+        "docs/plans/2026-06-13-watchkit-endpoint-scheme-canonicalization.md",
+        failures,
+    )
 
     app = read_plist("Alarm/Info.plist", failures)
     watch_app = read_plist("Alarm WatchKit App/Info.plist", failures)
@@ -864,6 +875,47 @@ def main():
         placeholder_suffix_plan,
         "hostile mutations",
         "placeholder-domain suffix plan must record hostile mutation evidence",
+        failures,
+    )
+    require_contains(
+        scheme_canonicalization_plan,
+        "Status: Completed",
+        "endpoint scheme canonicalization plan must be completed",
+        failures,
+    )
+    require_contains(
+        scheme_canonicalization_plan,
+        "make check",
+        "endpoint scheme canonicalization plan must record make check",
+        failures,
+    )
+    require(
+        "hostile mutations" in scheme_canonicalization_plan.lower(),
+        "endpoint scheme canonicalization plan must record hostile mutations",
+        failures,
+    )
+    require_contains(
+        readme,
+        "schemes are canonicalized case-insensitively",
+        "README must document parsed endpoint scheme canonicalization",
+        failures,
+    )
+    require_contains(
+        security,
+        "scheme is compared case-insensitively",
+        "security guidance must document parsed endpoint scheme canonicalization",
+        failures,
+    )
+    require_contains(
+        vision,
+        "Canonicalize parsed endpoint schemes case-insensitively",
+        "vision must preserve parsed endpoint scheme canonicalization",
+        failures,
+    )
+    require_contains(
+        changes,
+        "parsed HTTPS scheme validation case-insensitive",
+        "changes must record parsed endpoint scheme canonicalization",
         failures,
     )
     require_contains(

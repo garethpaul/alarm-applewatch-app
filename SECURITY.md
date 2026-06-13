@@ -42,6 +42,8 @@ Helpful reports include:
   delimiter-free suffix check.
 - Alarm submissions use POST to keep the normalized `alarmTime` out of request
   URLs and the proxy, server, analytics, or diagnostic logs that retain them.
+- The parsed endpoint scheme is compared case-insensitively; raw string prefixes
+  must not replace the parsed HTTPS-only transport boundary.
 
 ## Mobile Privacy Notes
 

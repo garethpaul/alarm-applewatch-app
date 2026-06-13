@@ -75,6 +75,8 @@ execute the legacy WatchKit targets.
 
 - No required secret or credential file was identified in the repository scan. If you add integrations later, keep secrets out of git.
 - The WatchKit extension reads `AlarmEndpointURL` from `Alarm WatchKit Extension/Info.plist`. Keep local or production endpoints HTTPS-only, parseable with a host, scoped to the `/alarm` path, and free of embedded credentials, query strings, or fragments.
+- Parsed alarm endpoint schemes are canonicalized case-insensitively, so valid
+  mixed-case HTTPS configuration is accepted while plaintext remains rejected.
 - The checked-in `AlarmEndpointURL` value must stay on the non-production
   `example.invalid` placeholder. Runtime validation rejects that sentinel, so
   configure a real alarm host locally before requests can be sent.
@@ -128,6 +130,8 @@ execute the legacy WatchKit targets.
   case-insensitive and trailing root dot placeholder rejection.
 - See `docs/plans/2026-06-13-watchkit-placeholder-domain-suffix.md` for
   reserved placeholder subdomain rejection.
+- See `docs/plans/2026-06-13-watchkit-endpoint-scheme-canonicalization.md` for
+  case-insensitive parsed HTTPS validation.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 

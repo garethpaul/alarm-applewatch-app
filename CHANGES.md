@@ -2,6 +2,8 @@
 
 ## 2026-06-13
 
+- Made parsed HTTPS scheme validation case-insensitive and removed the raw
+  lowercase-prefix gate while preserving every endpoint boundary.
 - Made the reserved alarm placeholder comparison case-insensitive and
   independent of a trailing root dot.
 - Extended static contracts and security guidance for DNS-equivalent
