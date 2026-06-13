@@ -78,6 +78,8 @@ execute the legacy WatchKit targets.
 - The checked-in `AlarmEndpointURL` value must stay on the non-production
   `example.invalid` placeholder. Runtime validation rejects that sentinel, so
   configure a real alarm host locally before requests can be sent.
+- Placeholder-host rejection is case-insensitive and ignores a trailing root dot,
+  so DNS-equivalent forms of `example.invalid` remain inert.
 - The WatchKit alarm slider and request code clamp alarm hours to the 5 through
   11 range before integer conversion, displaying, or sending `alarmTime`;
   non-finite programmatic values fall back safely.
@@ -118,6 +120,8 @@ execute the legacy WatchKit targets.
   endpoint path validation.
 - See `docs/plans/2026-06-09-watchkit-endpoint-placeholder-host.md` for the
   checked-in placeholder host guard.
+- See `docs/plans/2026-06-13-watchkit-placeholder-host-canonicalization.md` for
+  case-insensitive and trailing root dot placeholder rejection.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 

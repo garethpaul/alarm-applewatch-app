@@ -1,5 +1,12 @@
 # Changes
 
+## 2026-06-13
+
+- Made the reserved alarm placeholder comparison case-insensitive and
+  independent of a trailing root dot.
+- Extended static contracts and security guidance for DNS-equivalent
+  `example.invalid` forms.
+
 ## 2026-06-12
 
 - Guarded WatchKit alarm-hour float conversion so `NaN`, infinities, and

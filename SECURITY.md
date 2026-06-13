@@ -34,6 +34,9 @@ Helpful reports include:
   to the explicit `/alarm` path.
 - Alarm-hour inputs must be bounded while still represented as floats so
   non-finite or extreme values cannot trap during integer conversion.
+- The reserved alarm placeholder comparison is case-insensitive and ignores a
+  trailing root dot so DNS-equivalent `example.invalid` hosts cannot enable the
+  request path.
 
 ## Mobile Privacy Notes
 

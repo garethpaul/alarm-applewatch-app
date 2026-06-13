@@ -47,6 +47,10 @@ func alarmDisplayText(hour: Int) -> String {
     return "\(normalizedAlarmHour(hour)) am"
 }
 
+func canonicalAlarmHost(host: String) -> String {
+    return host.lowercaseString.stringByTrimmingCharactersInSet(NSCharacterSet(charactersInString: "."))
+}
+
 func alarmEndpointURL() -> String? {
     if let endpoint = NSBundle.mainBundle().objectForInfoDictionaryKey("AlarmEndpointURL") as? String {
         let trimmedEndpoint = endpoint.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
@@ -57,7 +61,7 @@ func alarmEndpointURL() -> String? {
                         if let path = url.path {
                             if scheme == "https" &&
                                 count(host) > 0 &&
-                                host != placeholderAlarmHost &&
+                                canonicalAlarmHost(host) != placeholderAlarmHost &&
                                 path == alarmEndpointPath &&
                                 url.user == nil &&
                                 url.password == nil &&

@@ -26,11 +26,13 @@ REQUIRED_FILES = [
     "AlarmTests/AlarmTests.swift",
     "AlarmTests/Info.plist",
     "docs/plans/2026-06-12-watchkit-nonfinite-alarm-hour.md",
+    "docs/plans/2026-06-13-watchkit-placeholder-host-canonicalization.md",
     "docs/device-preview.svg",
     "docs/readme-overview.svg",
     "Podfile",
     "Podfile.lock",
     "README.md",
+    "SECURITY.md",
     ".github/workflows/check.yml",
 ]
 
@@ -204,10 +206,23 @@ def check_alarm_endpoint(interface, extension_plist, failures):
         "checked-in placeholder host must stay explicit in source",
         failures,
     )
+    require_regex(
+        interface,
+        r"func\s+canonicalAlarmHost\(host:\s*String\)\s*->\s*String\s*\{.*"
+        r"host\.lowercaseString.*"
+        r"stringByTrimmingCharactersInSet\(NSCharacterSet\(charactersInString:\s*\"\.\"\)\)",
+        "InterfaceController must canonicalize alarm hosts for placeholder comparison",
+        failures,
+    )
     require_contains(
         interface,
-        "host != placeholderAlarmHost",
-        "InterfaceController must reject the checked-in placeholder host",
+        "canonicalAlarmHost(host) != placeholderAlarmHost",
+        "InterfaceController must reject equivalent checked-in placeholder hosts",
+        failures,
+    )
+    require(
+        "host != placeholderAlarmHost" not in interface,
+        "InterfaceController must not compare the raw alarm host with the placeholder",
         failures,
     )
     require_contains(
@@ -688,7 +703,7 @@ def check_ci(makefile, workflow, failures):
     require_contains(workflow, "run: make ci", "CI workflow must run the shared CI target", failures)
 
 
-def check_docs(readme, changes, endpoint_plan, placeholder_plan, inert_placeholder_plan, ci_plan, failures):
+def check_docs(readme, security, changes, endpoint_plan, placeholder_plan, inert_placeholder_plan, ci_plan, failures):
     require_contains(readme, "docs/readme-overview.svg", "README must embed the project overview", failures)
     require_contains(readme, "docs/device-preview.svg", "README must embed the device preview", failures)
     require_contains(readme, "Alarm.xcworkspace", "README must direct maintainers to open the workspace", failures)
@@ -702,6 +717,23 @@ def check_docs(readme, changes, endpoint_plan, placeholder_plan, inert_placehold
     require_contains(inert_placeholder_plan, "Status: Completed", "inert placeholder plan must be completed", failures)
     require_contains(inert_placeholder_plan, "make check", "inert placeholder plan must record make check", failures)
     require_contains(readme, "example.invalid", "README must document the inert endpoint placeholder", failures)
+    for label, text in {
+        "README": readme,
+        "SECURITY": security,
+        "CHANGES": changes,
+    }.items():
+        require_contains(
+            text,
+            "case-insensitive",
+            f"{label} must document case-insensitive placeholder-host rejection",
+            failures,
+        )
+        require_contains(
+            text,
+            "trailing root dot",
+            f"{label} must document trailing-root-dot placeholder rejection",
+            failures,
+        )
     require_contains(ci_plan, "Status: Completed", "CI baseline plan must be completed", failures)
 
 
@@ -720,6 +752,7 @@ def main():
     makefile = read_text("Makefile", failures)
     workflow = read_text(".github/workflows/check.yml", failures)
     readme = read_text("README.md", failures)
+    security = read_text("SECURITY.md", failures)
     changes = read_text("CHANGES.md", failures)
     endpoint_plan = read_text("docs/plans/2026-06-08-watchkit-endpoint-contracts.md", failures)
     placeholder_plan = read_text("docs/plans/2026-06-09-watchkit-endpoint-placeholder-host.md", failures)
@@ -727,6 +760,10 @@ def main():
     ci_plan = read_text("docs/plans/2026-06-10-watchkit-ci-baseline.md", failures)
     nonfinite_alarm_plan = read_text(
         "docs/plans/2026-06-12-watchkit-nonfinite-alarm-hour.md", failures
+    )
+    canonical_host_plan = read_text(
+        "docs/plans/2026-06-13-watchkit-placeholder-host-canonicalization.md",
+        failures,
     )
 
     app = read_plist("Alarm/Info.plist", failures)
@@ -742,7 +779,7 @@ def main():
     check_push_payload(failures)
     check_dependency_and_project_contracts(project, podfile, podfile_lock, failures)
     check_ci(makefile, workflow, failures)
-    check_docs(readme, changes, endpoint_plan, placeholder_plan, inert_placeholder_plan, ci_plan, failures)
+    check_docs(readme, security, changes, endpoint_plan, placeholder_plan, inert_placeholder_plan, ci_plan, failures)
     require_contains(
         nonfinite_alarm_plan,
         "Status: Completed",
@@ -753,6 +790,24 @@ def main():
         nonfinite_alarm_plan,
         "make check",
         "non-finite alarm-hour plan must record make check",
+        failures,
+    )
+    require_contains(
+        canonical_host_plan,
+        "Status: Completed",
+        "placeholder-host canonicalization plan must be completed",
+        failures,
+    )
+    require_contains(
+        canonical_host_plan,
+        "make check",
+        "placeholder-host canonicalization plan must record make check",
+        failures,
+    )
+    require_contains(
+        canonical_host_plan,
+        "hostile mutations",
+        "placeholder-host canonicalization plan must record hostile mutations",
         failures,
     )
 
