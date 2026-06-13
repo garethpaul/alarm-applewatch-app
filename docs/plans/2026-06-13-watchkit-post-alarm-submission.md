@@ -1,6 +1,6 @@
 # WatchKit POST Alarm Submission
 
-Status: Planned
+Status: Completed
 
 ## Context
 
@@ -59,4 +59,11 @@ Record the URL-data minimization boundary and actual verification.
 
 ## Verification
 
-Pending implementation and execution.
+- The focused source contract passed with one POST request using the validated
+  endpoint and normalized parameter helper, and no alarm GET request.
+- Isolated and canonical `make check` passed Python compilation and all SDK-free
+  contracts. The Apple build truthfully skipped because `xcodebuild` is absent.
+- Six hostile mutations were rejected: GET rollback, POST removal, parameter
+  removal, cancellation removal, security-guidance removal, and plan rollback.
+- Server compatibility, Xcode compilation, XCTest, simulator, signing, and
+  device behavior remain hosted or Apple-platform validation boundaries.

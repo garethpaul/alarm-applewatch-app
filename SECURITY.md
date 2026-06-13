@@ -37,6 +37,8 @@ Helpful reports include:
 - The reserved alarm placeholder comparison is case-insensitive and ignores a
   trailing root dot so DNS-equivalent `example.invalid` hosts cannot enable the
   request path.
+- Alarm submissions use POST to keep the normalized `alarmTime` out of request
+  URLs and the proxy, server, analytics, or diagnostic logs that retain them.
 
 ## Mobile Privacy Notes
 

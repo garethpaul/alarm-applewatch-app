@@ -27,6 +27,7 @@ REQUIRED_FILES = [
     "AlarmTests/Info.plist",
     "docs/plans/2026-06-12-watchkit-nonfinite-alarm-hour.md",
     "docs/plans/2026-06-13-watchkit-placeholder-host-canonicalization.md",
+    "docs/plans/2026-06-13-watchkit-post-alarm-submission.md",
     "docs/device-preview.svg",
     "docs/readme-overview.svg",
     "Podfile",
@@ -281,13 +282,13 @@ def check_alarm_endpoint(interface, extension_plist, failures):
     )
     require_contains(
         interface,
-        "Alamofire.request(.GET, endpoint, parameters: alarmParameters())",
-        "alarm request must use the validated endpoint and parameter helper",
+        "Alamofire.request(.POST, endpoint, parameters: alarmParameters())",
+        "alarm request must POST to the validated endpoint with normalized parameters",
         failures,
     )
     require(
-        not re.search(r"Alamofire\.request\(\s*\.GET\s*,\s*\"", interface),
-        "alarm request must not inline a URL literal",
+        "Alamofire.request(.GET" not in interface,
+        "alarm submissions must not encode alarmTime into a GET request URL",
         failures,
     )
     require_regex(
@@ -446,7 +447,7 @@ def check_alarm_request_lifecycle(interface, failures):
         interface,
         r"@IBAction\s+func\s+setAlarm\(\)\s*\{\s*"
         r"alarmRequest\?\.cancel\(\)\s*alarmRequest\s*=\s*nil.*"
-        r"alarmRequest\s*=\s*Alamofire\.request\(\.GET,\s*endpoint,\s*"
+        r"alarmRequest\s*=\s*Alamofire\.request\(\.POST,\s*endpoint,\s*"
         r"parameters:\s*alarmParameters\(\)\)",
         "setAlarm must cancel any prior request before retaining its replacement",
         failures,
@@ -734,6 +735,18 @@ def check_docs(readme, security, changes, endpoint_plan, placeholder_plan, inert
             f"{label} must document trailing-root-dot placeholder rejection",
             failures,
         )
+        require_contains(
+            text,
+            "POST",
+            f"{label} must document POST alarm submission",
+            failures,
+        )
+        require_regex(
+            text,
+            r"request\s+URLs?",
+            f"{label} must document alarmTime URL minimization",
+            failures,
+        )
     require_contains(ci_plan, "Status: Completed", "CI baseline plan must be completed", failures)
 
 
@@ -764,6 +777,9 @@ def main():
     canonical_host_plan = read_text(
         "docs/plans/2026-06-13-watchkit-placeholder-host-canonicalization.md",
         failures,
+    )
+    post_submission_plan = read_text(
+        "docs/plans/2026-06-13-watchkit-post-alarm-submission.md", failures
     )
 
     app = read_plist("Alarm/Info.plist", failures)
@@ -796,6 +812,24 @@ def main():
         canonical_host_plan,
         "Status: Completed",
         "placeholder-host canonicalization plan must be completed",
+        failures,
+    )
+    require_contains(
+        post_submission_plan,
+        "Status: Completed",
+        "POST alarm-submission plan must be completed",
+        failures,
+    )
+    require_contains(
+        post_submission_plan,
+        "make check",
+        "POST alarm-submission plan must record make check",
+        failures,
+    )
+    require_contains(
+        post_submission_plan,
+        "hostile mutations",
+        "POST alarm-submission plan must record hostile mutations",
         failures,
     )
     require_contains(

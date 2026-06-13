@@ -6,6 +6,9 @@
   independent of a trailing root dot.
 - Extended static contracts and security guidance for DNS-equivalent
   `example.invalid` forms.
+- Changed the state-changing alarm submission from GET to POST so `alarmTime`
+  is not encoded into request URLs.
+- Added portable method, documentation, and completed-plan contracts.
 
 ## 2026-06-12
 
