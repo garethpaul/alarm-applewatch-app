@@ -73,6 +73,7 @@ func alarmEndpointURL() -> String? {
                                 count(host) > 0 &&
                                 !isPlaceholderAlarmHost(host) &&
                                 path == alarmEndpointPath &&
+                                url.port == nil &&
                                 url.user == nil &&
                                 url.password == nil &&
                                 url.query == nil &&

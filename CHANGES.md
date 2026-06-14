@@ -2,6 +2,8 @@
 
 ## 2026-06-14
 
+- Rejected alarm endpoint configuration with an explicit port so validated
+  requests stay on the default HTTPS origin.
 - Validated alarm responses, released the still-current request on completion,
   and logged failures without endpoint, alarm-time, response, or dependency
   details.

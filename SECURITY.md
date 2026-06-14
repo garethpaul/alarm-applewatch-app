@@ -30,8 +30,8 @@ Helpful reports include:
 - Review found file, document, data, or media parsing flows; changes in those areas should receive security-focused review before merge.
 - Review found database, model, query, or persistence-related code; changes in those areas should receive security-focused review before merge.
 - Dependency manifests detected: Podfile, Podfile.lock. Dependency updates should preserve lockfiles when present and avoid introducing packages without a clear maintenance reason.
-- Alarm endpoint configuration should remain HTTPS, credential-free, and scoped
-  to the explicit `/alarm` path.
+- Alarm endpoint configuration should remain HTTPS, use no explicit port, stay
+  credential-free, and remain scoped to the explicit `/alarm` path.
 - Alarm-hour inputs must be bounded while still represented as floats so
   non-finite or extreme values cannot trap during integer conversion.
 - The reserved alarm placeholder comparison is case-insensitive and ignores a

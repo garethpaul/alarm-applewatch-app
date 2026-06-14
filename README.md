@@ -79,7 +79,7 @@ notifications, and privacy-safe evidence while keeping unexecuted rows explicit.
 ## Configuration and Secrets
 
 - No required secret or credential file was identified in the repository scan. If you add integrations later, keep secrets out of git.
-- The WatchKit extension reads `AlarmEndpointURL` from `Alarm WatchKit Extension/Info.plist`. Keep local or production endpoints HTTPS-only, parseable with a host, scoped to the `/alarm` path, and free of embedded credentials, query strings, or fragments.
+- The WatchKit extension reads `AlarmEndpointURL` from `Alarm WatchKit Extension/Info.plist`. Keep local or production endpoints HTTPS-only, parseable with a host, on the default HTTPS port, scoped to the `/alarm` path, and free of embedded credentials, query strings, or fragments.
 - Parsed alarm endpoint schemes are canonicalized case-insensitively, so valid
   mixed-case HTTPS configuration is accepted while plaintext remains rejected.
 - The checked-in `AlarmEndpointURL` value must stay on the non-production

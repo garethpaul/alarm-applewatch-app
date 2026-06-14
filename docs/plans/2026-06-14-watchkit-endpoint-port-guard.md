@@ -1,6 +1,6 @@
 # WatchKit Endpoint Port Guard
 
-Status: Planned
+Status: Completed
 
 ## Problem
 
@@ -51,3 +51,16 @@ the reviewed default HTTPS endpoint.
   baseline remains authoritative for Swift compatibility.
 - Private deployments that intentionally use a nondefault HTTPS port must move
   behind a standard-port endpoint before adopting this stricter contract.
+
+## Verification Results
+
+- Python syntax and the focused portable contract checker passed with the
+  default-port-only source and documentation contracts enabled.
+- Repository-root and external-directory `make check` passed against the exact
+  implementation; Linux truthfully skipped the unavailable Xcode build.
+- Seven hostile mutations were rejected across omitted, inverted, and
+  explicit-443 port guards, README, security, changelog, and plan-status
+  evidence.
+- Native WatchKit compilation remains a hosted exact-head verification step
+  after push; no local Xcode, simulator, device, or live endpoint execution is
+  claimed.

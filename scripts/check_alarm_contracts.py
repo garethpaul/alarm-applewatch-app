@@ -31,6 +31,7 @@ REQUIRED_FILES = [
     "docs/plans/2026-06-13-watchkit-endpoint-scheme-canonicalization.md",
     "docs/plans/2026-06-14-watchkit-alarm-redirect-rejection.md",
     "docs/plans/2026-06-14-watchkit-device-verification-checklist.md",
+    "docs/plans/2026-06-14-watchkit-endpoint-port-guard.md",
     "DEVICE_VERIFICATION.md",
     "docs/device-preview.svg",
     "docs/readme-overview.svg",
@@ -288,6 +289,21 @@ def check_alarm_endpoint(interface, extension_plist, failures):
         interface,
         'canonicalAlarmScheme(scheme) == "https"',
         "InterfaceController must require the canonical parsed AlarmEndpointURL scheme to be HTTPS",
+        failures,
+    )
+    endpoint_start = interface.find("func alarmEndpointURL() -> String?")
+    endpoint_end = interface.find("class InterfaceController", endpoint_start)
+    endpoint_validation = interface[endpoint_start:endpoint_end]
+    require_contains(
+        endpoint_validation,
+        "url.port == nil",
+        "InterfaceController must reject AlarmEndpointURL values with explicit ports",
+        failures,
+    )
+    require(
+        "url.port != nil" not in endpoint_validation
+        and "url.port == 443" not in endpoint_validation,
+        "InterfaceController must not allow an explicit AlarmEndpointURL port",
         failures,
     )
     require_contains(
@@ -885,6 +901,9 @@ def main():
         "docs/plans/2026-06-14-watchkit-device-verification-checklist.md",
         failures,
     )
+    endpoint_port_plan = read_text(
+        "docs/plans/2026-06-14-watchkit-endpoint-port-guard.md", failures
+    )
     device_verification = read_text("DEVICE_VERIFICATION.md", failures)
 
     app = read_plist("Alarm/Info.plist", failures)
@@ -1162,6 +1181,21 @@ def main():
         and "No Xcode, simulator, or physical-device scenario was executed"
         in device_verification_plan,
         "WatchKit device verification plan must record completed portable evidence and runtime non-claims",
+        failures,
+    )
+    require(
+        "Status: Completed" in endpoint_port_plan
+        and "make check" in endpoint_port_plan
+        and "hostile mutations" in endpoint_port_plan
+        and "hosted" in endpoint_port_plan.lower(),
+        "WatchKit endpoint port plan must record completed local and hosted verification boundaries",
+        failures,
+    )
+    require(
+        "default HTTPS port" in readme
+        and "use no explicit port" in security
+        and "explicit port" in changes,
+        "Repository guidance must document the default-port-only alarm endpoint boundary",
         failures,
     )
 
