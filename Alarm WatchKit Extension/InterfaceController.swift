@@ -108,7 +108,18 @@ class InterfaceController: WKInterfaceController {
         alarmRequest = nil
 
         if let endpoint = alarmEndpointURL() {
-            alarmRequest = Alamofire.request(.POST, endpoint, parameters: alarmParameters())
+            let request = Alamofire.request(.POST, endpoint, parameters: alarmParameters())
+            alarmRequest = request
+            request.validate().response { [weak self] (_, _, _, error) in
+                if let controller = self {
+                    if controller.alarmRequest === request {
+                        controller.alarmRequest = nil
+                        if error != nil {
+                            NSLog("Alarm submission failed.")
+                        }
+                    }
+                }
+            }
         } else {
             NSLog("Alarm endpoint is not configured; skipping alarm request.")
         }

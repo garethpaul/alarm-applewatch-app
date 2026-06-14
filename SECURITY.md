@@ -42,6 +42,8 @@ Helpful reports include:
   delimiter-free suffix check.
 - Alarm submissions use POST to keep the normalized `alarmTime` out of request
   URLs and the proxy, server, analytics, or diagnostic logs that retain them.
+- Response validation emits only a generic alarm submission failure for the
+  still-current request; stale callbacks and dependency details are ignored.
 - The parsed endpoint scheme is compared case-insensitively; raw string prefixes
   must not replace the parsed HTTPS-only transport boundary.
 

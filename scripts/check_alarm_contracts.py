@@ -484,8 +484,8 @@ def check_alarm_request_lifecycle(interface, failures):
         interface,
         r"@IBAction\s+func\s+setAlarm\(\)\s*\{\s*"
         r"alarmRequest\?\.cancel\(\)\s*alarmRequest\s*=\s*nil.*"
-        r"alarmRequest\s*=\s*Alamofire\.request\(\.POST,\s*endpoint,\s*"
-        r"parameters:\s*alarmParameters\(\)\)",
+        r"let\s+request\s*=\s*Alamofire\.request\(\.POST,\s*endpoint,\s*"
+        r"parameters:\s*alarmParameters\(\)\)\s*alarmRequest\s*=\s*request",
         "setAlarm must cancel any prior request before retaining its replacement",
         failures,
     )
@@ -500,6 +500,31 @@ def check_alarm_request_lifecycle(interface, failures):
     require(
         interface.count("Alamofire.request(") == 1,
         "InterfaceController must keep a single alarm request creation path",
+        failures,
+    )
+    require_regex(
+        interface,
+        r"let\s+request\s*=\s*Alamofire\.request\(\.POST,\s*endpoint,\s*"
+        r"parameters:\s*alarmParameters\(\)\)\s*alarmRequest\s*=\s*request\s*"
+        r"request\.validate\(\)\.response\s*\{\s*\[weak\s+self\]",
+        "setAlarm must retain and validate one request before observing completion",
+        failures,
+    )
+    require_regex(
+        interface,
+        r"if\s+let\s+controller\s*=\s*self\s*\{\s*"
+        r"if\s+controller\.alarmRequest\s*===\s*request\s*\{\s*"
+        r"controller\.alarmRequest\s*=\s*nil\s*"
+        r"if\s+error\s*!=\s*nil\s*\{\s*"
+        r'NSLog\("Alarm submission failed\."\)',
+        "alarm completion must clear and report only the still-current failed request",
+        failures,
+    )
+    require(
+        interface.count('NSLog("Alarm submission failed.")') == 1
+        and "NSLog(error" not in interface
+        and "NSLog(\"%@\"" not in interface,
+        "alarm completion must keep one generic failure log without dependency details",
         failures,
     )
 
@@ -847,6 +872,9 @@ def main():
     make_root_plan = read_text(
         "docs/plans/2026-06-14-make-root-override-protection.md", failures
     )
+    response_completion_plan = read_text(
+        "docs/plans/2026-06-14-watchkit-alarm-response-completion.md", failures
+    )
 
     app = read_plist("Alarm/Info.plist", failures)
     watch_app = read_plist("Alarm WatchKit App/Info.plist", failures)
@@ -978,6 +1006,47 @@ def main():
         changes,
         "placeholder subdomains",
         "changes must record placeholder subdomain rejection",
+        failures,
+    )
+    require_contains(
+        response_completion_plan,
+        "Status: Completed",
+        "alarm response completion plan must be completed",
+        failures,
+    )
+    require_contains(
+        response_completion_plan,
+        "make check",
+        "alarm response completion plan must record make check",
+        failures,
+    )
+    require(
+        "mutations" in response_completion_plan.lower(),
+        "alarm response completion plan must record mutation evidence",
+        failures,
+    )
+    require_contains(
+        readme,
+        "Completed alarm requests clear only while still current",
+        "README must document current-request completion handling",
+        failures,
+    )
+    require_contains(
+        security,
+        "generic alarm submission failure",
+        "security guidance must document generic alarm failure logging",
+        failures,
+    )
+    require_contains(
+        vision,
+        "Validate alarm responses and ignore stale completion callbacks",
+        "vision must preserve alarm response completion handling",
+        failures,
+    )
+    require_contains(
+        changes,
+        "Validated alarm responses",
+        "changes must record alarm response completion handling",
         failures,
     )
     require_contains(

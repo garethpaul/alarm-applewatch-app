@@ -1,5 +1,13 @@
 # Changes
 
+## 2026-06-14
+
+- Validated alarm responses, released the still-current request on completion,
+  and logged failures without endpoint, alarm-time, response, or dependency
+  details.
+- Added mutation-sensitive completion, stale-callback, documentation, and plan
+  contracts.
+
 ## 2026-06-13
 
 - Made parsed HTTPS scheme validation case-insensitive and removed the raw

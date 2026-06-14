@@ -1,6 +1,6 @@
 # WatchKit Alarm Response Completion
 
-Status: Planned
+Status: Completed
 
 ## Problem
 
@@ -44,13 +44,19 @@ contracts. Update maintenance, security, vision, and change guidance.
 
 ## Verification
 
-- Run the portable checker before and after implementation.
-- Run bounded root and external `make check` gates.
-- Reject focused mutations for validation, weak capture, identity protection,
-  clear-before-log ordering, generic logging, documentation, plan status, and
-  plan presence.
-- Run Python compilation, plist/workspace/project parsing, `git diff --check`,
-  and explicit secret and generated-artifact audits.
+Completed on 2026-06-14:
+
+- The portable checker first rejected the missing validation, identity-safe
+  completion, and generic failure contracts, then passed after implementation.
+- An unmodified disposable copy passed with this plan marked complete.
+- Eight hostile mutations were rejected: validation, weak capture, current
+  request identity, clear-before-log ordering, generic logging, documentation,
+  plan status, and plan presence.
+- Python compilation and `git diff --check` passed before the full gates.
+- Bounded `make check` passed from the repository root and from `/tmp` through
+  the absolute Makefile path. Both runs passed Python compilation and every
+  portable contract; both truthfully skipped the legacy Apple build because
+  `xcodebuild` is unavailable on this Linux host.
 
 ## Scope Boundaries
 

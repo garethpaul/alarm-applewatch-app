@@ -90,6 +90,9 @@ execute the legacy WatchKit targets.
 - WatchKit outlets are optional and label updates use optional chaining so a disconnected legacy storyboard outlet does not crash the controller.
 - The WatchKit controller retains only the current alarm request. A replacement
   request or controller deactivation cancels and releases outstanding work.
+- Completed alarm requests clear only while still current. Failed submissions
+  emit one generic category without endpoint, alarm-time, response, or
+  dependency error details.
 - Alarm changes use POST so the normalized `alarmTime` is not placed in the
   request URL query string by the client.
 - Alarm endpoint validation checks both the HTTPS text prefix and the parsed

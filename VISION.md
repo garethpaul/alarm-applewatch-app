@@ -37,6 +37,7 @@ Priority:
   preserved
 - Keep only one alarm submission in flight and cancel it when the watch
   interface deactivates
+- Validate alarm responses and ignore stale completion callbacks
 - Avoid changes that require unavailable Apple tooling without documenting them
 
 Next priorities:
