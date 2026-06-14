@@ -108,6 +108,10 @@ class InterfaceController: WKInterfaceController {
         alarmRequest = nil
 
         if let endpoint = alarmEndpointURL() {
+            Manager.sharedInstance.delegate.taskWillPerformHTTPRedirection = {
+                (_, _, _, _) in
+                return nil
+            }
             let request = Alamofire.request(.POST, endpoint, parameters: alarmParameters())
             alarmRequest = request
             request.validate().response { [weak self] (_, _, _, error) in

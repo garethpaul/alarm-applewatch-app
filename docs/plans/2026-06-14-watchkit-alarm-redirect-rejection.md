@@ -1,6 +1,6 @@
 # WatchKit Alarm Redirect Rejection
 
-Status: Planned
+Status: Completed
 
 ## Context
 
@@ -53,14 +53,21 @@ Describe redirects as rejected before follow-up transmission.
 
 ## Verification
 
-Planned:
+Completed on 2026-06-14:
 
-- Run the portable checker and any available Swift/Xcode validation.
-- Reject focused mutations that remove the hook, return the redirect request,
-  move configuration after request creation, remove security wording, or
-  revert plan status.
-- Audit the exact diff, generated artifacts, whitespace, and credential-shaped
-  additions before committing.
+- The portable checker recognized the redirect hook, nil return, configuration
+  order, and documentation, failing only while this plan was intentionally
+  incomplete.
+- The pinned Alamofire 1.2.1 tagged source confirms the public redirect closure
+  accepts a nullable follow-up request and passes its result to the URL session
+  completion handler.
+- No Swift compiler, Xcode, watchOS SDK, or simulator is installed on the Linux
+  host; the repository's `make check` gate is the applicable local validation.
+- Full `make check` passed the portable contract suite and truthfully skipped
+  the unavailable legacy Apple build.
+- Five focused mutations were rejected when they removed the hook, returned the
+  redirect request, moved configuration after request creation, removed the
+  security wording, or changed this plan back to `Status: Planned`.
 
 ## Risks
 

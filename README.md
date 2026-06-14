@@ -95,6 +95,8 @@ execute the legacy WatchKit targets.
   dependency error details.
 - Alarm changes use POST so the normalized `alarmTime` is not placed in the
   request URL query string by the client.
+- The pinned Alamofire session rejects redirect follow-up requests before a
+  validated alarm POST can be moved to another target.
 - Alarm endpoint validation checks both the HTTPS text prefix and the parsed
   `NSURL.scheme` before sending a request.
 - Alarm endpoint validation checks the parsed URL path before sending a

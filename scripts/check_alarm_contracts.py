@@ -29,6 +29,7 @@ REQUIRED_FILES = [
     "docs/plans/2026-06-13-watchkit-placeholder-host-canonicalization.md",
     "docs/plans/2026-06-13-watchkit-post-alarm-submission.md",
     "docs/plans/2026-06-13-watchkit-endpoint-scheme-canonicalization.md",
+    "docs/plans/2026-06-14-watchkit-alarm-redirect-rejection.md",
     "docs/device-preview.svg",
     "docs/readme-overview.svg",
     "Podfile",
@@ -875,6 +876,9 @@ def main():
     response_completion_plan = read_text(
         "docs/plans/2026-06-14-watchkit-alarm-response-completion.md", failures
     )
+    redirect_plan = read_text(
+        "docs/plans/2026-06-14-watchkit-alarm-redirect-rejection.md", failures
+    )
 
     app = read_plist("Alarm/Info.plist", failures)
     watch_app = read_plist("Alarm WatchKit App/Info.plist", failures)
@@ -885,6 +889,26 @@ def main():
     check_alarm_hour_bounds(interface, storyboard, failures)
     check_watchkit_outlet_safety(interface, failures)
     check_alarm_request_lifecycle(interface, failures)
+    require_contains(
+        interface,
+        "Manager.sharedInstance.delegate.taskWillPerformHTTPRedirection",
+        "alarm submissions must install the Alamofire redirect hook",
+        failures,
+    )
+    require_regex(
+        interface,
+        r"taskWillPerformHTTPRedirection\s*=\s*\{\s*"
+        r"\(_,\s*_,\s*_,\s*_\)\s+in\s*return\s+nil\s*\}",
+        "alarm redirect hook must reject the follow-up request",
+        failures,
+    )
+    require(
+        0
+        <= interface.find("taskWillPerformHTTPRedirection")
+        < interface.find("Alamofire.request(.POST"),
+        "alarm redirect rejection must be configured before request creation",
+        failures,
+    )
     check_plist_contracts(app, watch_app, extension, tests, failures)
     check_push_payload(failures)
     check_dependency_and_project_contracts(project, podfile, podfile_lock, failures)
@@ -1023,6 +1047,31 @@ def main():
     require(
         "mutations" in response_completion_plan.lower(),
         "alarm response completion plan must record mutation evidence",
+        failures,
+    )
+    require_contains(
+        redirect_plan,
+        "Status: Completed",
+        "alarm redirect rejection plan must be completed",
+        failures,
+    )
+    require_contains(
+        redirect_plan,
+        "make check",
+        "alarm redirect rejection plan must record make check",
+        failures,
+    )
+    require(
+        "mutations" in redirect_plan.lower(),
+        "alarm redirect rejection plan must record mutation evidence",
+        failures,
+    )
+    require(
+        "rejects redirect follow-up requests" in readme
+        and "reject redirect follow-up requests" in security
+        and "Reject alarm redirect follow-up requests" in vision
+        and "Rejected alarm redirect follow-up requests" in changes,
+        "alarm redirect rejection must remain documented",
         failures,
     )
     require_contains(

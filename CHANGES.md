@@ -7,6 +7,8 @@
   details.
 - Added mutation-sensitive completion, stale-callback, documentation, and plan
   contracts.
+- Rejected alarm redirect follow-up requests through Alamofire's pinned session
+  delegate before another target can receive the POST.
 
 ## 2026-06-13
 
