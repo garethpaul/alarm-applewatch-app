@@ -9,6 +9,9 @@
   contracts.
 - Rejected alarm redirect follow-up requests through Alamofire's pinned session
   delegate before another target can receive the POST.
+- Added an exact-commit WatchKit simulator and paired-device verification matrix
+  for launch, alarm requests, lifecycle cancellation, failures, notifications,
+  and privacy-safe evidence, with every runtime row explicitly unexecuted.
 
 ## 2026-06-13
 

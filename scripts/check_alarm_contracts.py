@@ -30,6 +30,8 @@ REQUIRED_FILES = [
     "docs/plans/2026-06-13-watchkit-post-alarm-submission.md",
     "docs/plans/2026-06-13-watchkit-endpoint-scheme-canonicalization.md",
     "docs/plans/2026-06-14-watchkit-alarm-redirect-rejection.md",
+    "docs/plans/2026-06-14-watchkit-device-verification-checklist.md",
+    "DEVICE_VERIFICATION.md",
     "docs/device-preview.svg",
     "docs/readme-overview.svg",
     "Podfile",
@@ -879,6 +881,11 @@ def main():
     redirect_plan = read_text(
         "docs/plans/2026-06-14-watchkit-alarm-redirect-rejection.md", failures
     )
+    device_verification_plan = read_text(
+        "docs/plans/2026-06-14-watchkit-device-verification-checklist.md",
+        failures,
+    )
+    device_verification = read_text("DEVICE_VERIFICATION.md", failures)
 
     app = read_plist("Alarm/Info.plist", failures)
     watch_app = read_plist("Alarm WatchKit App/Info.plist", failures)
@@ -1120,6 +1127,41 @@ def main():
         canonical_host_plan,
         "hostile mutations",
         "placeholder-host canonicalization plan must record hostile mutations",
+        failures,
+    )
+    for contract in (
+        "commit SHA and pull request",
+        "Open `Alarm.xcworkspace`",
+        "Watch app deactivation",
+        "Repeated submission",
+        "Redirect response",
+        "PushNotificationPayload.apns",
+        "Do not convert `not run` into passing evidence.",
+        "endpoint URL, alarm time, credentials",
+        "every simulator and physical-device row as",
+        "unexecuted",
+    ):
+        require_contains(
+            device_verification,
+            contract,
+            "WatchKit device verification checklist must keep runtime evidence contract",
+            failures,
+        )
+    require(
+        "DEVICE_VERIFICATION.md" in readme
+        and "keeping unexecuted rows explicit" in readme
+        and "device verification matrix" in vision.lower()
+        and "every runtime row explicitly unexecuted" in changes,
+        "Repository guidance must document the unexecuted WatchKit runtime matrix",
+        failures,
+    )
+    require(
+        "Status: Completed" in device_verification_plan
+        and "make check" in device_verification_plan
+        and "hostile mutations" in device_verification_plan
+        and "No Xcode, simulator, or physical-device scenario was executed"
+        in device_verification_plan,
+        "WatchKit device verification plan must record completed portable evidence and runtime non-claims",
         failures,
     )
 

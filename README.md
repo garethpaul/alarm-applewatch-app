@@ -71,6 +71,11 @@ GitHub Actions intentionally runs `make ci` on Linux with pinned actions,
 read-only permissions, and manual dispatch; it does not claim to compile or
 execute the legacy WatchKit targets.
 
+Use [`DEVICE_VERIFICATION.md`](DEVICE_VERIFICATION.md) for the exact-commit
+simulator and paired-device matrix. It covers workspace build, companion and
+WatchKit launch, alarm submission, deactivation cancellation, failures,
+notifications, and privacy-safe evidence while keeping unexecuted rows explicit.
+
 ## Configuration and Secrets
 
 - No required secret or credential file was identified in the repository scan. If you add integrations later, keep secrets out of git.
@@ -137,6 +142,8 @@ execute the legacy WatchKit targets.
   reserved placeholder subdomain rejection.
 - See `docs/plans/2026-06-13-watchkit-endpoint-scheme-canonicalization.md` for
   case-insensitive parsed HTTPS validation.
+- See `docs/plans/2026-06-14-watchkit-device-verification-checklist.md` for the
+  simulator/device evidence matrix and runtime non-claims.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 

@@ -40,6 +40,8 @@ Priority:
 - Validate alarm responses and ignore stale completion callbacks
 - Reject alarm redirect follow-up requests before transmission
 - Avoid changes that require unavailable Apple tooling without documenting them
+- Keep exact-commit simulator and paired-device evidence separate from portable
+  static contracts, with unexecuted rows recorded explicitly
 
 Next priorities:
 
@@ -47,6 +49,8 @@ Next priorities:
 - Prefer HTTPS and documented transport expectations
 - Update the Swift, WatchKit, CocoaPods, and Alamofire stack in a dedicated pass
 - Replace placeholder tests with coverage around extracted app behavior
+- Execute the WatchKit device verification matrix with an authorized HTTPS test
+  endpoint and privacy-safe evidence
 
 Contribution rules:
 
