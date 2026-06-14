@@ -633,8 +633,26 @@ def check_ci(makefile, workflow, failures):
     checkout_action = "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10"
     require_contains(
         makefile,
-        "ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))",
-        "Makefile must resolve repository paths from its own location",
+        "override ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))",
+        "Makefile must protect repository paths from command-line overrides",
+        failures,
+    )
+    require_contains(
+        makefile,
+        "PYTHON ?= python3",
+        "Makefile must preserve the Python command override",
+        failures,
+    )
+    require_contains(
+        makefile,
+        "$(ROOT)scripts/check_alarm_contracts.py",
+        "Makefile must use the rooted contract checker path",
+        failures,
+    )
+    require_contains(
+        makefile,
+        "cd $(ROOT) && xcodebuild -workspace Alarm.xcworkspace",
+        "Makefile must run Xcode from the repository root",
         failures,
     )
     require_regex(
@@ -826,6 +844,9 @@ def main():
         "docs/plans/2026-06-13-watchkit-endpoint-scheme-canonicalization.md",
         failures,
     )
+    make_root_plan = read_text(
+        "docs/plans/2026-06-14-make-root-override-protection.md", failures
+    )
 
     app = read_plist("Alarm/Info.plist", failures)
     watch_app = read_plist("Alarm WatchKit App/Info.plist", failures)
@@ -892,6 +913,23 @@ def main():
     require(
         "hostile mutations" in scheme_canonicalization_plan.lower(),
         "endpoint scheme canonicalization plan must record hostile mutations",
+        failures,
+    )
+    require_contains(
+        make_root_plan,
+        "Status: Completed",
+        "Make root protection plan must be completed",
+        failures,
+    )
+    require_contains(
+        make_root_plan,
+        "make check",
+        "Make root protection plan must record make check",
+        failures,
+    )
+    require(
+        "mutations" in make_root_plan.lower(),
+        "Make root protection plan must record mutation evidence",
         failures,
     )
     require_contains(

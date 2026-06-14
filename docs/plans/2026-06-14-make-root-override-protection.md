@@ -1,6 +1,6 @@
 # Make Root Override Protection
 
-Status: Planned
+Status: Completed
 
 ## Problem
 
@@ -31,3 +31,19 @@ assignment and redirect verification away from the reviewed checkout.
 - Do not change Swift/Objective-C behavior, dependencies, project metadata,
   workflows, storyboards, or deployment configuration.
 - Do not merge or close any pull request without explicit owner authorization.
+
+## Work Completed
+
+- Protected the Makefile-derived root while preserving the Python command and
+  every existing target.
+- Added exact contracts for protected derivation, Python override semantics,
+  rooted checker/Xcode execution, and this completed plan.
+
+## Verification Results
+
+- Python compilation and the portable checker passed.
+- Local, external-directory, and hostile `ROOT` full `make check` gates passed;
+  each truthfully skipped the unavailable Linux `xcodebuild`.
+- Eight focused root, tool, path, and plan-status mutations were rejected.
+- Plist/XML/workflow, whitespace, explicit-artifact, exact-diff, and
+  changed-line credential audits passed before shipment.

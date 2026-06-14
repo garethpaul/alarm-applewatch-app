@@ -1,7 +1,7 @@
 .PHONY: lint test build ci verify check
 
 PYTHON ?= python3
-ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+override ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 lint:
 	$(PYTHON) -m py_compile $(ROOT)scripts/check_alarm_contracts.py
