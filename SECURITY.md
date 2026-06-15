@@ -46,6 +46,7 @@ Helpful reports include:
   Alamofire manager without mutating the process-wide shared manager.
 - Alarm submissions use a 10-second request timeout and 15-second resource timeout
   so a stalled endpoint cannot retain the watch request indefinitely.
+- Alarm submissions use an ephemeral session so cookies, credentials, and cache data are not persisted.
 - Response validation emits only a generic alarm submission failure for the
   still-current request; stale callbacks and dependency details are ignored.
 - The parsed endpoint scheme is compared case-insensitively; raw string prefixes

@@ -105,6 +105,7 @@ notifications, and privacy-safe evidence while keeping unexecuted rows explicit.
   requests.
 - Alarm submissions use an explicit 10-second request timeout and 15-second
   resource timeout instead of platform-defined session defaults.
+- Alarm submissions use an ephemeral session so cookies, credentials, and cache data are not persisted.
 - Alarm endpoint validation checks both the HTTPS text prefix and the parsed
   `NSURL.scheme` before sending a request.
 - Alarm endpoint validation checks the parsed URL path before sending a

@@ -2,6 +2,7 @@
 
 ## 2026-06-15
 
+- Alarm submissions use an ephemeral session so cookies, credentials, and cache data are not persisted.
 - Bounded alarm submissions with explicit request and resource timeouts on the
   dedicated WatchKit session manager.
 - Scoped alarm redirect refusal to a dedicated Alamofire manager so submitting

@@ -915,6 +915,9 @@ def main():
     request_timeout_plan = read_text(
         "docs/plans/2026-06-15-watchkit-alarm-request-timeouts.md", failures
     )
+    ephemeral_session_plan = read_text(
+        "docs/plans/2026-06-15-watchkit-ephemeral-alarm-session.md", failures
+    )
     device_verification = read_text("DEVICE_VERIFICATION.md", failures)
 
     app = read_plist("Alarm/Info.plist", failures)
@@ -929,14 +932,39 @@ def main():
     require_regex(
         interface,
         r"private\s+let\s+alarmRequestManager:\s*Manager\s*=\s*\{\s*"
-        r"let\s+configuration\s*=\s*NSURLSessionConfiguration\.defaultSessionConfiguration\(\)\s*"
+        r"let\s+configuration\s*=\s*NSURLSessionConfiguration\.ephemeralSessionConfiguration\(\)\s*"
         r"configuration\.HTTPAdditionalHeaders\s*=\s*Manager\.defaultHTTPHeaders\s*"
         r"configuration\.timeoutIntervalForRequest\s*=\s*alarmRequestTimeout\s*"
         r"configuration\.timeoutIntervalForResource\s*=\s*alarmResourceTimeout\s*"
         r"let\s+manager\s*=\s*Manager\(configuration:\s*configuration\)",
-        "alarm submissions must use a dedicated bounded default-configured Alamofire manager",
+        "alarm submissions must use a dedicated bounded ephemeral Alamofire manager",
         failures,
     )
+    for label, text in (
+        ("README", readme),
+        ("security guidance", security),
+        ("vision", vision),
+        ("agent guidance", agents),
+        ("changes", changes),
+    ):
+        require_contains(
+            text,
+            "Alarm submissions use an ephemeral session so cookies, credentials, and cache data are not persisted.",
+            f"{label} must document ephemeral alarm session privacy",
+            failures,
+        )
+    for contract in (
+        "Status: Completed",
+        "ephemeralSessionConfiguration",
+        "make check",
+        "hostile mutations",
+    ):
+        require_contains(
+            ephemeral_session_plan,
+            contract,
+            f"ephemeral alarm session plan must keep contract: {contract}",
+            failures,
+        )
     require(
         "Manager.sharedInstance" not in interface,
         "alarm submissions must not mutate the process-wide Alamofire shared manager",

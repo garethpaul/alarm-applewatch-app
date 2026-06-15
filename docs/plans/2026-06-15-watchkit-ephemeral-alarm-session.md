@@ -1,6 +1,6 @@
 # WatchKit Ephemeral Alarm Session
 
-Status: In Progress
+Status: Completed
 
 ## Context
 
@@ -77,8 +77,23 @@ documentation, and plan completion are rejected.
 
 ## Work Completed
 
-Pending implementation.
+- Replaced the dedicated alarm manager's default session configuration with
+  `ephemeralSessionConfiguration` while preserving default Alamofire headers,
+  request and resource timeouts, redirect refusal, and initialization order.
+- Added portable source-order, documentation, and completed-plan contracts.
+- Documented the non-persistence boundary across README, security, vision,
+  contributor guidance, and the changelog.
 
 ## Verification Completed
 
-Pending implementation and validation.
+- `python3 -m py_compile scripts/check_alarm_contracts.py`
+- `python3 scripts/check_alarm_contracts.py`
+- Repository-root and external-directory `make check` validation.
+- All documented Make aliases.
+- Isolated hostile mutations covering session type, manager ordering,
+  documentation, and plan evidence.
+- Exact-path diff, generated-artifact, conflict-marker, whitespace, and
+  credential-shaped-addition audits.
+- Xcode, simulator, paired-device, and live-endpoint validation were not run
+  because this Linux host does not provide Apple tooling or an authorized
+  endpoint.
