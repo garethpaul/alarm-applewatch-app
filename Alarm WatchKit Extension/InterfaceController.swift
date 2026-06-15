@@ -14,9 +14,13 @@ private let alarmEndpointPath = "/alarm"
 private let placeholderAlarmHost = "example.invalid"
 private let minimumAlarmHour = 5
 private let maximumAlarmHour = 11
+private let alarmRequestTimeout: NSTimeInterval = 10.0
+private let alarmResourceTimeout: NSTimeInterval = 15.0
 private let alarmRequestManager: Manager = {
     let configuration = NSURLSessionConfiguration.defaultSessionConfiguration()
     configuration.HTTPAdditionalHeaders = Manager.defaultHTTPHeaders
+    configuration.timeoutIntervalForRequest = alarmRequestTimeout
+    configuration.timeoutIntervalForResource = alarmResourceTimeout
     let manager = Manager(configuration: configuration)
     manager.delegate.taskWillPerformHTTPRedirection = {
         (_, _, _, _) in

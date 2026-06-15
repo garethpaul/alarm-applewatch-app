@@ -44,6 +44,8 @@ Helpful reports include:
   URLs and the proxy, server, analytics, or diagnostic logs that retain them.
 - Alarm submissions reject redirect follow-up requests through a dedicated
   Alamofire manager without mutating the process-wide shared manager.
+- Alarm submissions use a 10-second request timeout and 15-second resource timeout
+  so a stalled endpoint cannot retain the watch request indefinitely.
 - Response validation emits only a generic alarm submission failure for the
   still-current request; stale callbacks and dependency details are ignored.
 - The parsed endpoint scheme is compared case-insensitively; raw string prefixes

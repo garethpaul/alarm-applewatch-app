@@ -103,6 +103,8 @@ notifications, and privacy-safe evidence while keeping unexecuted rows explicit.
 - A dedicated Alamofire manager rejects redirect follow-up requests for alarm
   submissions without changing redirect behavior for unrelated shared-manager
   requests.
+- Alarm submissions use an explicit 10-second request timeout and 15-second
+  resource timeout instead of platform-defined session defaults.
 - Alarm endpoint validation checks both the HTTPS text prefix and the parsed
   `NSURL.scheme` before sending a request.
 - Alarm endpoint validation checks the parsed URL path before sending a

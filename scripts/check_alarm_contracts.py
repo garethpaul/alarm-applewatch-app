@@ -33,6 +33,7 @@ REQUIRED_FILES = [
     "docs/plans/2026-06-14-watchkit-device-verification-checklist.md",
     "docs/plans/2026-06-14-watchkit-endpoint-port-guard.md",
     "docs/plans/2026-06-15-watchkit-isolated-redirect-manager.md",
+    "docs/plans/2026-06-15-watchkit-alarm-request-timeouts.md",
     "DEVICE_VERIFICATION.md",
     "docs/device-preview.svg",
     "docs/readme-overview.svg",
@@ -870,6 +871,7 @@ def main():
     security = read_text("SECURITY.md", failures)
     vision = read_text("VISION.md", failures)
     changes = read_text("CHANGES.md", failures)
+    agents = read_text("AGENTS.md", failures)
     endpoint_plan = read_text("docs/plans/2026-06-08-watchkit-endpoint-contracts.md", failures)
     placeholder_plan = read_text("docs/plans/2026-06-09-watchkit-endpoint-placeholder-host.md", failures)
     inert_placeholder_plan = read_text("docs/plans/2026-06-10-watchkit-inert-endpoint-placeholder.md", failures)
@@ -910,6 +912,9 @@ def main():
     isolated_redirect_plan = read_text(
         "docs/plans/2026-06-15-watchkit-isolated-redirect-manager.md", failures
     )
+    request_timeout_plan = read_text(
+        "docs/plans/2026-06-15-watchkit-alarm-request-timeouts.md", failures
+    )
     device_verification = read_text("DEVICE_VERIFICATION.md", failures)
 
     app = read_plist("Alarm/Info.plist", failures)
@@ -926,8 +931,10 @@ def main():
         r"private\s+let\s+alarmRequestManager:\s*Manager\s*=\s*\{\s*"
         r"let\s+configuration\s*=\s*NSURLSessionConfiguration\.defaultSessionConfiguration\(\)\s*"
         r"configuration\.HTTPAdditionalHeaders\s*=\s*Manager\.defaultHTTPHeaders\s*"
+        r"configuration\.timeoutIntervalForRequest\s*=\s*alarmRequestTimeout\s*"
+        r"configuration\.timeoutIntervalForResource\s*=\s*alarmResourceTimeout\s*"
         r"let\s+manager\s*=\s*Manager\(configuration:\s*configuration\)",
-        "alarm submissions must use a dedicated default-configured Alamofire manager",
+        "alarm submissions must use a dedicated bounded default-configured Alamofire manager",
         failures,
     )
     require(
@@ -1228,6 +1235,61 @@ def main():
         and "git diff --check" in isolated_redirect_plan
         and "generated-artifact and likely-secret audits" in isolated_redirect_plan,
         "WatchKit isolated redirect-manager plan must record completed verification",
+        failures,
+    )
+    require_regex(
+        interface,
+        r"private\s+let\s+alarmRequestTimeout\s*:\s*NSTimeInterval\s*=\s*10\.0",
+        "Alarm request timeout must remain an explicit 10-second constant",
+        failures,
+    )
+    require_regex(
+        interface,
+        r"private\s+let\s+alarmResourceTimeout\s*:\s*NSTimeInterval\s*=\s*15\.0",
+        "Alarm resource timeout must remain an explicit 15-second constant",
+        failures,
+    )
+    request_timeout_assignment = (
+        "configuration.timeoutIntervalForRequest = alarmRequestTimeout"
+    )
+    resource_timeout_assignment = (
+        "configuration.timeoutIntervalForResource = alarmResourceTimeout"
+    )
+    manager_construction = "let manager = Manager(configuration: configuration)"
+    require_contains(
+        interface,
+        request_timeout_assignment,
+        "Alarm manager configuration must apply the request timeout",
+        failures,
+    )
+    require_contains(
+        interface,
+        resource_timeout_assignment,
+        "Alarm manager configuration must apply the resource timeout",
+        failures,
+    )
+    require(
+        interface.find(request_timeout_assignment) < interface.find(manager_construction)
+        and interface.find(resource_timeout_assignment) < interface.find(manager_construction),
+        "Alarm timeouts must be configured before manager construction",
+        failures,
+    )
+    require(
+        "10-second request timeout" in readme
+        and "15-second resource timeout" in security
+        and "bounded alarm request and resource timeouts" in agents
+        and "Bounded alarm submissions" in changes,
+        "Repository guidance must document bounded alarm submission timeouts",
+        failures,
+    )
+    require(
+        "Status: Completed" in request_timeout_plan
+        and "focused portable contract checker" in request_timeout_plan
+        and "repository-root and external-directory `make check`" in request_timeout_plan
+        and "isolated hostile mutations" in request_timeout_plan
+        and "artifact, conflict-marker, large-file, and likely-secret audits"
+        in request_timeout_plan,
+        "WatchKit alarm request-timeout plan must record completed verification",
         failures,
     )
 

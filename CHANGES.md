@@ -2,6 +2,8 @@
 
 ## 2026-06-15
 
+- Bounded alarm submissions with explicit request and resource timeouts on the
+  dedicated WatchKit session manager.
 - Scoped alarm redirect refusal to a dedicated Alamofire manager so submitting
   an alarm cannot change redirect behavior for unrelated shared-manager
   requests.

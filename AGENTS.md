@@ -60,6 +60,8 @@
 - WatchKit outlets are optional and label updates use optional chaining so a disconnected legacy storyboard outlet does not crash the controller.
 - The WatchKit controller retains only the active request, cancels replaced
   submissions, and cancels outstanding work when the interface deactivates.
+- Preserve the bounded alarm request and resource timeouts when changing the
+  dedicated submission manager.
 - Alarm endpoint validation checks both the HTTPS text prefix and the parsed `NSURL.scheme` before sending a request.
 - Alarm endpoint validation checks the parsed URL path before sending a request, so host-only endpoints do not receive alarm submissions.
 
