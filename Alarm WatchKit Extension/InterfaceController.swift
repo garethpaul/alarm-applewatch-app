@@ -14,6 +14,16 @@ private let alarmEndpointPath = "/alarm"
 private let placeholderAlarmHost = "example.invalid"
 private let minimumAlarmHour = 5
 private let maximumAlarmHour = 11
+private let alarmRequestManager: Manager = {
+    let configuration = NSURLSessionConfiguration.defaultSessionConfiguration()
+    configuration.HTTPAdditionalHeaders = Manager.defaultHTTPHeaders
+    let manager = Manager(configuration: configuration)
+    manager.delegate.taskWillPerformHTTPRedirection = {
+        (_, _, _, _) in
+        return nil
+    }
+    return manager
+}()
 
 func normalizedAlarmHour(hour: Int) -> Int {
     if hour < minimumAlarmHour {
@@ -109,11 +119,7 @@ class InterfaceController: WKInterfaceController {
         alarmRequest = nil
 
         if let endpoint = alarmEndpointURL() {
-            Manager.sharedInstance.delegate.taskWillPerformHTTPRedirection = {
-                (_, _, _, _) in
-                return nil
-            }
-            let request = Alamofire.request(.POST, endpoint, parameters: alarmParameters())
+            let request = alarmRequestManager.request(.POST, endpoint, parameters: alarmParameters())
             alarmRequest = request
             request.validate().response { [weak self] (_, _, _, error) in
                 if let controller = self {

@@ -100,8 +100,9 @@ notifications, and privacy-safe evidence while keeping unexecuted rows explicit.
   dependency error details.
 - Alarm changes use POST so the normalized `alarmTime` is not placed in the
   request URL query string by the client.
-- The pinned Alamofire session rejects redirect follow-up requests before a
-  validated alarm POST can be moved to another target.
+- A dedicated Alamofire manager rejects redirect follow-up requests for alarm
+  submissions without changing redirect behavior for unrelated shared-manager
+  requests.
 - Alarm endpoint validation checks both the HTTPS text prefix and the parsed
   `NSURL.scheme` before sending a request.
 - Alarm endpoint validation checks the parsed URL path before sending a

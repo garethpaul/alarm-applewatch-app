@@ -1,6 +1,6 @@
 # WatchKit Isolated Redirect Manager
 
-Status: Planned
+Status: Completed
 
 ## Context
 
@@ -28,9 +28,10 @@ request using the global manager. The same version supports a dedicated
    headers and redirect refusal on its own delegate.
 2. Route the existing alarm POST through that dedicated manager and remove the
    shared delegate mutation from `setAlarm()`.
-3. Extend `AlarmTests/AlarmTests.swift` fixtures and
-   `scripts/check_alarm_contracts.py` with mutation-sensitive manager-isolation
-   contracts.
+3. Extend `scripts/check_alarm_contracts.py` with mutation-sensitive
+   manager-isolation contracts. The legacy `AlarmTests` app target does not
+   compile or import the WatchKit extension, so it cannot exercise this
+   boundary without a broader project-membership refactor.
 4. Update `README.md`, `SECURITY.md`, `CHANGES.md`, and this plan with the
    completed boundary and truthful verification.
 
@@ -50,11 +51,20 @@ request using the global manager. The same version supports a dedicated
   Linux.
 - Keep this work stacked on the endpoint-port guard pull request.
 
-## Verification To Complete
+## Completed Verification
 
-- Run focused Python contract checks and the complete root/external `make check`.
-- Reject isolated mutations covering shared-manager use, top-level request use,
-  missing default headers, missing redirect refusal, documentation, and plan
-  completion.
-- Run exact diff, generated-artifact, and likely-secret audits.
-- Take one bounded exact-head hosted snapshot after push without polling.
+- The focused portable contract check passed with
+  `python3 scripts/check_alarm_contracts.py`.
+- No source-inspection XCTest was added to the unrelated legacy app test
+  target; the portable checker owns this extension-source contract.
+- The repository-root and external-directory `make check` gates passed. On this
+  Linux host they include Python compilation and static contracts; Xcode was
+  unavailable, so no simulator, device, or Apple-platform build is claimed.
+- Seven isolated hostile mutations were rejected: shared-manager use, the
+  top-level request helper, missing default headers, missing redirect refusal,
+  request-before-configuration ordering, missing documentation, and plan
+  status rollback.
+- `git diff --check` and explicit generated-artifact and likely-secret audits
+  passed for the intended files.
+- Hosted verification is recorded separately from one bounded exact-head
+  snapshot after push; no hosted result is claimed in this local plan.

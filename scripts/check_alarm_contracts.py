@@ -32,6 +32,7 @@ REQUIRED_FILES = [
     "docs/plans/2026-06-14-watchkit-alarm-redirect-rejection.md",
     "docs/plans/2026-06-14-watchkit-device-verification-checklist.md",
     "docs/plans/2026-06-14-watchkit-endpoint-port-guard.md",
+    "docs/plans/2026-06-15-watchkit-isolated-redirect-manager.md",
     "DEVICE_VERIFICATION.md",
     "docs/device-preview.svg",
     "docs/readme-overview.svg",
@@ -338,12 +339,13 @@ def check_alarm_endpoint(interface, extension_plist, failures):
     )
     require_contains(
         interface,
-        "Alamofire.request(.POST, endpoint, parameters: alarmParameters())",
+        "alarmRequestManager.request(.POST, endpoint, parameters: alarmParameters())",
         "alarm request must POST to the validated endpoint with normalized parameters",
         failures,
     )
     require(
-        "Alamofire.request(.GET" not in interface,
+        "Alamofire.request(.GET" not in interface
+        and "alarmRequestManager.request(.GET" not in interface,
         "alarm submissions must not encode alarmTime into a GET request URL",
         failures,
     )
@@ -503,7 +505,7 @@ def check_alarm_request_lifecycle(interface, failures):
         interface,
         r"@IBAction\s+func\s+setAlarm\(\)\s*\{\s*"
         r"alarmRequest\?\.cancel\(\)\s*alarmRequest\s*=\s*nil.*"
-        r"let\s+request\s*=\s*Alamofire\.request\(\.POST,\s*endpoint,\s*"
+        r"let\s+request\s*=\s*alarmRequestManager\.request\(\.POST,\s*endpoint,\s*"
         r"parameters:\s*alarmParameters\(\)\)\s*alarmRequest\s*=\s*request",
         "setAlarm must cancel any prior request before retaining its replacement",
         failures,
@@ -517,13 +519,14 @@ def check_alarm_request_lifecycle(interface, failures):
         failures,
     )
     require(
-        interface.count("Alamofire.request(") == 1,
+        interface.count("alarmRequestManager.request(") == 1
+        and "Alamofire.request(" not in interface,
         "InterfaceController must keep a single alarm request creation path",
         failures,
     )
     require_regex(
         interface,
-        r"let\s+request\s*=\s*Alamofire\.request\(\.POST,\s*endpoint,\s*"
+        r"let\s+request\s*=\s*alarmRequestManager\.request\(\.POST,\s*endpoint,\s*"
         r"parameters:\s*alarmParameters\(\)\)\s*alarmRequest\s*=\s*request\s*"
         r"request\.validate\(\)\.response\s*\{\s*\[weak\s+self\]",
         "setAlarm must retain and validate one request before observing completion",
@@ -904,6 +907,9 @@ def main():
     endpoint_port_plan = read_text(
         "docs/plans/2026-06-14-watchkit-endpoint-port-guard.md", failures
     )
+    isolated_redirect_plan = read_text(
+        "docs/plans/2026-06-15-watchkit-isolated-redirect-manager.md", failures
+    )
     device_verification = read_text("DEVICE_VERIFICATION.md", failures)
 
     app = read_plist("Alarm/Info.plist", failures)
@@ -915,10 +921,18 @@ def main():
     check_alarm_hour_bounds(interface, storyboard, failures)
     check_watchkit_outlet_safety(interface, failures)
     check_alarm_request_lifecycle(interface, failures)
-    require_contains(
+    require_regex(
         interface,
-        "Manager.sharedInstance.delegate.taskWillPerformHTTPRedirection",
-        "alarm submissions must install the Alamofire redirect hook",
+        r"private\s+let\s+alarmRequestManager:\s*Manager\s*=\s*\{\s*"
+        r"let\s+configuration\s*=\s*NSURLSessionConfiguration\.defaultSessionConfiguration\(\)\s*"
+        r"configuration\.HTTPAdditionalHeaders\s*=\s*Manager\.defaultHTTPHeaders\s*"
+        r"let\s+manager\s*=\s*Manager\(configuration:\s*configuration\)",
+        "alarm submissions must use a dedicated default-configured Alamofire manager",
+        failures,
+    )
+    require(
+        "Manager.sharedInstance" not in interface,
+        "alarm submissions must not mutate the process-wide Alamofire shared manager",
         failures,
     )
     require_regex(
@@ -931,7 +945,8 @@ def main():
     require(
         0
         <= interface.find("taskWillPerformHTTPRedirection")
-        < interface.find("Alamofire.request(.POST"),
+        < interface.find("return manager")
+        < interface.find("alarmRequestManager.request(.POST"),
         "alarm redirect rejection must be configured before request creation",
         failures,
     )
@@ -1093,8 +1108,8 @@ def main():
         failures,
     )
     require(
-        "rejects redirect follow-up requests" in readme
-        and "reject redirect follow-up requests" in security
+        re.search(r"rejects\s+redirect follow-up requests", readme)
+        and re.search(r"reject\s+redirect follow-up requests", security)
         and "Reject alarm redirect follow-up requests" in vision
         and "Rejected alarm redirect follow-up requests" in changes,
         "alarm redirect rejection must remain documented",
@@ -1196,6 +1211,23 @@ def main():
         and "use no explicit port" in security
         and "explicit port" in changes,
         "Repository guidance must document the default-port-only alarm endpoint boundary",
+        failures,
+    )
+    require(
+        "dedicated Alamofire manager" in readme
+        and "process-wide shared manager" in security
+        and "dedicated Alamofire manager" in changes,
+        "Repository guidance must document alarm redirect-manager isolation",
+        failures,
+    )
+    require(
+        "Status: Completed" in isolated_redirect_plan
+        and "focused portable contract check" in isolated_redirect_plan
+        and "repository-root and external-directory `make check`" in isolated_redirect_plan
+        and "isolated hostile mutations" in isolated_redirect_plan
+        and "git diff --check" in isolated_redirect_plan
+        and "generated-artifact and likely-secret audits" in isolated_redirect_plan,
+        "WatchKit isolated redirect-manager plan must record completed verification",
         failures,
     )
 

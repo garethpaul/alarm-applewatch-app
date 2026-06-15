@@ -42,8 +42,8 @@ Helpful reports include:
   delimiter-free suffix check.
 - Alarm submissions use POST to keep the normalized `alarmTime` out of request
   URLs and the proxy, server, analytics, or diagnostic logs that retain them.
-- Alarm submissions reject redirect follow-up requests before another target
-  can receive the validated POST.
+- Alarm submissions reject redirect follow-up requests through a dedicated
+  Alamofire manager without mutating the process-wide shared manager.
 - Response validation emits only a generic alarm submission failure for the
   still-current request; stale callbacks and dependency details are ignored.
 - The parsed endpoint scheme is compared case-insensitively; raw string prefixes

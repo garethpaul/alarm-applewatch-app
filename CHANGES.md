@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-15
+
+- Scoped alarm redirect refusal to a dedicated Alamofire manager so submitting
+  an alarm cannot change redirect behavior for unrelated shared-manager
+  requests.
+
 ## 2026-06-14
 
 - Rejected alarm endpoint configuration with an explicit port so validated
