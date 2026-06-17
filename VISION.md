@@ -40,6 +40,7 @@ Priority:
 - Validate alarm responses and ignore stale completion callbacks
 - Reject alarm redirect follow-up requests before transmission
 - Alarm submissions use an ephemeral session so cookies, credentials, and cache data are not persisted.
+- Alarm submissions disable cookie, credential, and cache stores so one request cannot influence the next.
 - Avoid changes that require unavailable Apple tooling without documenting them
 - Keep exact-commit simulator and paired-device evidence separate from portable
   static contracts, with unexecuted rows recorded explicitly

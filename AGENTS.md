@@ -63,6 +63,7 @@
 - Preserve the bounded alarm request and resource timeouts when changing the
   dedicated submission manager.
 - Alarm submissions use an ephemeral session so cookies, credentials, and cache data are not persisted.
+- Alarm submissions disable cookie, credential, and cache stores so one request cannot influence the next.
 - Alarm endpoint validation checks both the HTTPS text prefix and the parsed `NSURL.scheme` before sending a request.
 - Alarm endpoint validation checks the parsed URL path before sending a request, so host-only endpoints do not receive alarm submissions.
 

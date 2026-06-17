@@ -1,6 +1,6 @@
 # WatchKit Alarm Session Storage Isolation
 
-Status: Planned
+Status: Completed
 
 ## Problem
 
@@ -32,6 +32,8 @@ Primary sources:
    `ephemeralSessionConfiguration()`.
 2. Its configuration must explicitly disable cookie acceptance/sending,
    cookie storage, credential storage, and URL caching before manager creation.
+   The legacy Swift properties are `HTTPShouldSetCookies`, `HTTPCookieStorage`,
+   `URLCredentialStorage`, and `URLCache`.
 3. Alamofire default headers, the 10-second request timeout, the 15-second
    resource timeout, and the isolated redirect delegate must remain unchanged.
 4. Endpoint validation, POST parameters, current-request identity,
@@ -89,7 +91,7 @@ guidance, or falsify completion.
 ## Verification
 
 - Run the focused portable checker before and after implementation.
-- Run every maintained Make gate from the repository and the complete check
+- Run every maintained Make gate from the repository and `make check`
   from an external directory with explicit timeouts.
 - Reject isolated hostile mutations for all four storage settings, ordering,
   existing transport/lifecycle behavior, guidance, and plan completion.
@@ -99,4 +101,20 @@ guidance, or falsify completion.
 
 ## Completed Verification
 
-To be recorded after implementation and validation.
+- Apple Foundation documentation confirmed that ephemeral session data is
+  retained in RAM until invalidation and that the default ephemeral URL cache
+  is an in-memory cache.
+- The portable checker failed before implementation on the missing storage,
+  guidance, and completed-plan contracts.
+- `make lint`, `make test`, `make ci`, `make verify`, and `make check` passed
+  from the repository; external-directory `make check` passed through the
+  absolute Makefile path.
+- Eight isolated hostile mutations were rejected across the ephemeral
+  baseline, cookie handling, cookie storage, credential storage, URL cache,
+  initialization ordering, maintained guidance, and plan completion.
+- Exact-path, generated-artifact, dependency/project/workflow drift,
+  credential, conflict-marker, file-mode, large-file, and whitespace audits
+  are recorded by the final validation pass.
+- Xcode, simulator, paired-device, and live-endpoint validation were not run
+  because this Linux host does not provide Apple tooling or an authorized
+  endpoint.

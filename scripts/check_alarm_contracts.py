@@ -918,6 +918,9 @@ def main():
     ephemeral_session_plan = read_text(
         "docs/plans/2026-06-15-watchkit-ephemeral-alarm-session.md", failures
     )
+    session_storage_plan = read_text(
+        "docs/plans/2026-06-17-watchkit-session-storage-isolation.md", failures
+    )
     device_verification = read_text("DEVICE_VERIFICATION.md", failures)
 
     app = read_plist("Alarm/Info.plist", failures)
@@ -933,6 +936,10 @@ def main():
         interface,
         r"private\s+let\s+alarmRequestManager:\s*Manager\s*=\s*\{\s*"
         r"let\s+configuration\s*=\s*NSURLSessionConfiguration\.ephemeralSessionConfiguration\(\)\s*"
+        r"configuration\.HTTPShouldSetCookies\s*=\s*false\s*"
+        r"configuration\.HTTPCookieStorage\s*=\s*nil\s*"
+        r"configuration\.URLCredentialStorage\s*=\s*nil\s*"
+        r"configuration\.URLCache\s*=\s*nil\s*"
         r"configuration\.HTTPAdditionalHeaders\s*=\s*Manager\.defaultHTTPHeaders\s*"
         r"configuration\.timeoutIntervalForRequest\s*=\s*alarmRequestTimeout\s*"
         r"configuration\.timeoutIntervalForResource\s*=\s*alarmResourceTimeout\s*"
@@ -940,6 +947,34 @@ def main():
         "alarm submissions must use a dedicated bounded ephemeral Alamofire manager",
         failures,
     )
+    for label, text in (
+        ("README", readme),
+        ("security guidance", security),
+        ("vision", vision),
+        ("agent guidance", agents),
+        ("changes", changes),
+    ):
+        require_contains(
+            text,
+            "Alarm submissions disable cookie, credential, and cache stores so one request cannot influence the next.",
+            f"{label} must document alarm session storage isolation",
+            failures,
+        )
+    for contract in (
+        "Status: Completed",
+        "HTTPShouldSetCookies",
+        "HTTPCookieStorage",
+        "URLCredentialStorage",
+        "URLCache",
+        "make check",
+        "hostile mutations",
+    ):
+        require_contains(
+            session_storage_plan,
+            contract,
+            f"session storage isolation plan must keep contract: {contract}",
+            failures,
+        )
     for label, text in (
         ("README", readme),
         ("security guidance", security),

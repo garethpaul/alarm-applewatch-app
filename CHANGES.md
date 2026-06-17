@@ -1,5 +1,9 @@
 # Changes
 
+## 2026-06-17
+
+- Alarm submissions disable cookie, credential, and cache stores so one request cannot influence the next.
+
 ## 2026-06-15
 
 - Alarm submissions use an ephemeral session so cookies, credentials, and cache data are not persisted.
