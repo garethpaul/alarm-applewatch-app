@@ -1,5 +1,16 @@
 # Changes
 
+## 2026-06-19
+
+- Rejected private/local, numeric, IDN, reserved, and ambiguous alarm endpoint
+  destinations through a shared Foundation-native policy.
+- Validated final response URL, status, declared media type, and body length;
+  discarded response bytes and cancelled transfers above 4096 bytes.
+- Added native fake-network, structural, and mutation-sensitive tests plus a
+  hosted macOS policy gate.
+- Made the unsupported WatchKit 1 / Swift 1 build an explicit Xcode 6-era opt-in
+  while keeping workspace parsing in the portable macOS baseline.
+
 ## 2026-06-17
 
 - Alarm submissions disable cookie, credential, and cache stores so one request cannot influence the next.

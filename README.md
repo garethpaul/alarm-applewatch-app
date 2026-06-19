@@ -60,16 +60,17 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 ## Testing and Verification
 
 - `make ci` - runs the dependency-free lint and static contract checks used by GitHub Actions on Python 3.10, 3.12, and 3.14
-- `make check` - runs dependency-free static contracts and attempts an Xcode build when `xcodebuild` is available
+- `make check` - runs portable contracts, mutation tests, native Foundation policy tests on macOS, and parses the Xcode workspace
+- `RUN_LEGACY_XCODE_BUILD=1 make build` - explicitly attempts the historical WatchKit 1 / Swift 1 build with a compatible Xcode 6-era toolchain
 - Xcode's test action or `xcodebuild test` with the appropriate scheme and destination
 
 The static contracts cover endpoint configuration, WatchKit plist relationships,
 notification payload JSON, Xcode target types, and legacy CocoaPods pins. When
 the required SDK or runtime is unavailable, use static checks and source review
 first, then verify on a machine that has the matching platform toolchain.
-GitHub Actions intentionally runs `make ci` on Linux with pinned actions,
-read-only permissions, and manual dispatch; it does not claim to compile or
-execute the legacy WatchKit targets.
+GitHub Actions runs the portable matrix on Linux and the Foundation-native
+network policy suite on macOS with pinned actions and read-only permissions. It
+does not claim to compile or execute the legacy WatchKit targets.
 
 Use [`DEVICE_VERIFICATION.md`](DEVICE_VERIFICATION.md) for the exact-commit
 simulator and paired-device matrix. It covers workspace build, companion and
@@ -107,10 +108,16 @@ notifications, and privacy-safe evidence while keeping unexecuted rows explicit.
   resource timeout instead of platform-defined session defaults.
 - Alarm submissions use an ephemeral session so cookies, credentials, and cache data are not persisted.
 - Alarm submissions disable cookie, credential, and cache stores so one request cannot influence the next.
-- Alarm endpoint validation checks both the HTTPS text prefix and the parsed
-  `NSURL.scheme` before sending a request.
-- Alarm endpoint validation checks the parsed URL path before sending a
-  request, so host-only endpoints do not receive alarm submissions.
+- A Foundation-native policy canonicalizes endpoint URLs and rejects IP
+  literals, legacy numeric IPv4 forms, localhost/local/reserved DNS suffixes,
+  IDN/punycode labels, encoded-path ambiguity, and every previously documented
+  scheme/port/userinfo/query/fragment violation.
+- Alarm responses must remain on the validated URL, return 2xx, declare only
+  JSON/plain-text content when a media type is present, and stay within a
+  4096-byte streamed body cap. Response bytes are discarded rather than stored.
+- DNS answers are not pinned. Use only an authorized static public hostname;
+  production adaptations still need DNS and network-egress controls against
+  rebinding or later private resolution.
 
 ## Security and Privacy Notes
 

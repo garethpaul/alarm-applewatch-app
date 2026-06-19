@@ -39,11 +39,14 @@ inert.
 | Scenario | Expected result | Result | Evidence |
 | --- | --- | --- | --- |
 | Placeholder endpoint | Submission fails closed before network dispatch. | not run | |
+| Private, local, numeric, or IDN endpoint | Submission fails closed before network dispatch. | not run | |
 | Valid alarm hour | One POST carries the bounded alarm parameter. | not run | |
 | Repeated submission | The prior request is cancelled before the next starts. | not run | |
 | Deactivate during request | Completion cannot update the inactive interface. | not run | |
 | Redirect response | No follow-up request is transmitted. | not run | |
 | Non-2xx response | Current request clears and one generic failure is logged. | not run | |
+| Invalid media type or response URL drift | Request is rejected without retaining body content. | not run | |
+| Response larger than 4096 bytes | Transfer is cancelled and completion occurs once. | not run | |
 | Transport failure | UI remains usable and dependency details are not logged. | not run | |
 
 Sanitized logs must not contain the endpoint URL, alarm time, credentials,

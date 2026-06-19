@@ -27,6 +27,8 @@ Priority:
 - Require alarm endpoints to stay scoped to the explicit `/alarm` path
 - Reject alarm endpoint URLs that embed credentials
 - Reject alarm endpoint URLs that carry query strings or fragments
+- Reject direct local/private destinations, legacy numeric hosts, IDN labels,
+  and encoded-path ambiguity before request creation
 - Keep the checked-in alarm endpoint on a non-resolving placeholder host and
   reject that sentinel at runtime
 - Reject reserved placeholder subdomains without treating unrelated suffix
@@ -38,6 +40,7 @@ Priority:
 - Keep only one alarm submission in flight and cancel it when the watch
   interface deactivates
 - Validate alarm responses and ignore stale completion callbacks
+- Bound and discard alarm response bodies instead of buffering unused content
 - Reject alarm redirect follow-up requests before transmission
 - Alarm submissions use an ephemeral session so cookies, credentials, and cache data are not persisted.
 - Alarm submissions disable cookie, credential, and cache stores so one request cannot influence the next.

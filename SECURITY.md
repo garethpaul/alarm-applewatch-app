@@ -48,6 +48,15 @@ Helpful reports include:
   so a stalled endpoint cannot retain the watch request indefinitely.
 - Alarm submissions use an ephemeral session so cookies, credentials, and cache data are not persisted.
 - Alarm submissions disable cookie, credential, and cache stores so one request cannot influence the next.
+- Alarm endpoint validation accepts only canonical ASCII public-DNS-shaped
+  hosts and rejects IP literals, legacy numeric IPv4 forms, IDN/punycode,
+  localhost, local/reserved suffixes, and encoded path ambiguity.
+- Alarm responses must stay on the validated URL, return 2xx, use an allowed
+  declared media type, and remain within the 4096-byte streamed body limit.
+  Response bytes are discarded rather than retained by Alamofire.
+- URL validation does not pin DNS answers. A trusted hostname can still resolve
+  or rebind to a private address after validation, so production use requires an
+  authorized static endpoint plus DNS and egress controls.
 - Response validation emits only a generic alarm submission failure for the
   still-current request; stale callbacks and dependency details are ignored.
 - The parsed endpoint scheme is compared case-insensitively; raw string prefixes

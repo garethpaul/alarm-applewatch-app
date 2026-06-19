@@ -24,7 +24,8 @@
 - Combined verification: `make verify`
 - Lint/static checks: `make lint`
 - Tests: `make test`
-- Build: `make build`
+- Project/native policy check: `make build`
+- Historical build (compatible Xcode 6 only): `RUN_LEGACY_XCODE_BUILD=1 make build`
 - Local Apple development: `open Alarm.xcworkspace`
 - If a command above skips because a platform toolchain is missing, verify on a machine with that SDK before claiming platform behavior is tested.
 
@@ -50,7 +51,7 @@
 ## Safety and gotchas
 
 - No required secret or credential file was identified in the repository scan. If you add integrations later, keep secrets out of git.
-- The WatchKit extension reads `AlarmEndpointURL` from `Alarm WatchKit Extension/Info.plist`. Keep local or production endpoints HTTPS-only, parseable with a host, scoped to the `/alarm` path, and free of embedded credentials, query strings, or fragments.
+- The WatchKit extension reads `AlarmEndpointURL` from `Alarm WatchKit Extension/Info.plist`. Keep local or production endpoints HTTPS-only, ASCII public-DNS-shaped, scoped to the `/alarm` path, and free of explicit ports, embedded credentials, query strings, or fragments.
 - The checked-in `AlarmEndpointURL` must remain on `example.invalid`; runtime
   validation rejects that inert placeholder until a real HTTPS `/alarm` endpoint
   is configured locally.
@@ -64,8 +65,12 @@
   dedicated submission manager.
 - Alarm submissions use an ephemeral session so cookies, credentials, and cache data are not persisted.
 - Alarm submissions disable cookie, credential, and cache stores so one request cannot influence the next.
-- Alarm endpoint validation checks both the HTTPS text prefix and the parsed `NSURL.scheme` before sending a request.
-- Alarm endpoint validation checks the parsed URL path before sending a request, so host-only endpoints do not receive alarm submissions.
+- Preserve `AlarmNetworkPolicy` rejection of direct private/local destinations,
+  IDN/punycode, legacy numeric hosts, and encoded path ambiguity.
+- Preserve final-response URL/status/content checks and the 4096-byte streamed
+  response cap. The dedicated manager intentionally discards response bytes.
+- DNS answers are not pinned; document this residual assumption and never claim
+  SSRF prevention for public hostnames that later resolve or rebind privately.
 
 ## Agent workflow
 

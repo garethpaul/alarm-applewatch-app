@@ -19,6 +19,9 @@ REQUIRED_FILES = [
     "Alarm/Info.plist",
     "Alarm WatchKit App/Info.plist",
     "Alarm WatchKit Extension/Info.plist",
+    "Alarm WatchKit Extension/AlarmNetworkPolicy.h",
+    "Alarm WatchKit Extension/AlarmNetworkPolicy.m",
+    "Alarm WatchKit Extension/Alarm WatchKit Extension-Bridging-Header.h",
     "Alarm WatchKit Extension/InterfaceController.swift",
     "Alarm WatchKit Extension/NotificationController.swift",
     "Alarm WatchKit Extension/PushNotificationPayload.apns",
@@ -34,6 +37,7 @@ REQUIRED_FILES = [
     "docs/plans/2026-06-14-watchkit-endpoint-port-guard.md",
     "docs/plans/2026-06-15-watchkit-isolated-redirect-manager.md",
     "docs/plans/2026-06-15-watchkit-alarm-request-timeouts.md",
+    "docs/plans/2026-06-19-watchkit-network-boundary-review.md",
     "DEVICE_VERIFICATION.md",
     "docs/device-preview.svg",
     "docs/readme-overview.svg",
@@ -163,7 +167,7 @@ def check_required_files(failures):
         require((ROOT / relative_path).exists(), f"{relative_path} is missing", failures)
 
 
-def check_alarm_endpoint(interface, extension_plist, failures):
+def check_alarm_endpoint(interface, network_policy, extension_plist, failures):
     endpoint = extension_plist.get("AlarmEndpointURL")
     parsed_endpoint = urlparse(endpoint) if isinstance(endpoint, str) else None
 
@@ -178,12 +182,6 @@ def check_alarm_endpoint(interface, extension_plist, failures):
         "InterfaceController must read AlarmEndpointURL from extension Info.plist",
         failures,
     )
-    require_contains(
-        interface,
-        "stringByTrimmingCharactersInSet",
-        "alarm endpoint must be trimmed before validation",
-        failures,
-    )
     require(
         'hasPrefix("https://")' not in interface,
         "InterfaceController must not use a case-sensitive raw HTTPS prefix gate",
@@ -191,147 +189,73 @@ def check_alarm_endpoint(interface, extension_plist, failures):
     )
     require_contains(
         interface,
-        "NSURL(string: trimmedEndpoint)",
-        "InterfaceController must parse AlarmEndpointURL before using it",
-        failures,
-    )
-    require_contains(
-        interface,
-        "url.host",
-        "InterfaceController must require a host on AlarmEndpointURL",
+        "AlarmNetworkPolicy.validatedEndpointURL(endpoint)",
+        "InterfaceController must delegate endpoint parsing to the native policy",
         failures,
     )
     require_regex(
-        interface,
-        r"func\s+canonicalAlarmScheme\(scheme:\s*String\)\s*->\s*String\s*\{.*"
-        r"return\s+scheme\.lowercaseString",
-        "InterfaceController must canonicalize parsed alarm endpoint schemes",
-        failures,
-    )
-    require_regex(
-        interface,
-        r"private\s+let\s+alarmEndpointPath\s*=\s*\"/alarm\"",
+        network_policy,
+        r'percentEncodedPath\s+isEqualToString:@"/alarm"',
         "alarm endpoint path must stay explicit as a named constant",
         failures,
     )
-    require_regex(
-        interface,
-        r'private\s+let\s+placeholderAlarmHost\s*=\s*"example\.invalid"',
-        "checked-in placeholder host must stay explicit in source",
-        failures,
-    )
-    require_regex(
-        interface,
-        r"func\s+canonicalAlarmHost\(host:\s*String\)\s*->\s*String\s*\{.*"
-        r"host\.lowercaseString.*"
-        r"stringByTrimmingCharactersInSet\(NSCharacterSet\(charactersInString:\s*\"\.\"\)\)",
-        "InterfaceController must canonicalize alarm hosts for placeholder comparison",
+    require_contains(
+        network_policy,
+        "+ (NSString *)canonicalHost:(NSString *)host",
+        "native endpoint policy must canonicalize parsed hosts",
         failures,
     )
     require_contains(
-        interface,
-        "func isPlaceholderAlarmHost(host: String) -> Bool",
-        "InterfaceController must classify reserved placeholder hosts",
-        failures,
-    )
-    require_contains(
-        interface,
-        "let canonicalHost = canonicalAlarmHost(host)",
-        "placeholder classification must use the canonical alarm host",
-        failures,
-    )
-    require_contains(
-        interface,
-        "canonicalHost == placeholderAlarmHost",
-        "placeholder classification must reject the exact reserved host",
-        failures,
-    )
-    require_contains(
-        interface,
-        'canonicalHost.hasSuffix("." + placeholderAlarmHost)',
-        "placeholder classification must reject dot-delimited reserved subdomains",
+        network_policy,
+        "+ (BOOL)isDisallowedHost:(NSString *)host",
+        "native endpoint policy must classify reserved and local hosts",
         failures,
     )
     require(
-        'canonicalHost.hasSuffix(placeholderAlarmHost)' not in interface,
-        "placeholder suffix matching must preserve the DNS label delimiter",
+        '@"invalid"' in network_policy
+        and '@"localhost"' in network_policy
+        and '@"local"' in network_policy
+        and '@"internal"' in network_policy
+        and '@"home.arpa"' in network_policy,
+        "native endpoint policy must reject reserved and local DNS suffixes",
         failures,
     )
     require_contains(
-        interface,
-        "!isPlaceholderAlarmHost(host)",
-        "InterfaceController must reject classified placeholder hosts before requests",
+        network_policy,
+        "NSASCIIStringEncoding",
+        "native endpoint policy must reject non-ASCII and IDN input",
         failures,
     )
     require(
-        "host != placeholderAlarmHost" not in interface
-        and "canonicalAlarmHost(host) != placeholderAlarmHost" not in interface,
-        "InterfaceController must not compare the raw alarm host with the placeholder",
+        '@"xn--"' in network_policy and 'componentsSeparatedByString:@"."' in network_policy,
+        "native endpoint policy must reject IDN labels and validate DNS labels",
         failures,
     )
     require_contains(
-        interface,
-        "url.path",
-        "InterfaceController must inspect the parsed AlarmEndpointURL path",
+        network_policy,
+        "componentsWithString:trimmed",
+        "native endpoint policy must parse AlarmEndpointURL before use",
         failures,
     )
     require_contains(
-        interface,
-        "path == alarmEndpointPath",
-        "InterfaceController must require AlarmEndpointURL to use the alarm path",
+        network_policy,
+        '[components.scheme caseInsensitiveCompare:@"https"]',
+        "native endpoint policy must require HTTPS case-insensitively",
         failures,
     )
     require_contains(
-        interface,
-        "if let scheme = url.scheme",
-        "InterfaceController must inspect the parsed AlarmEndpointURL scheme",
-        failures,
-    )
-    require_contains(
-        interface,
-        'canonicalAlarmScheme(scheme) == "https"',
-        "InterfaceController must require the canonical parsed AlarmEndpointURL scheme to be HTTPS",
-        failures,
-    )
-    endpoint_start = interface.find("func alarmEndpointURL() -> String?")
-    endpoint_end = interface.find("class InterfaceController", endpoint_start)
-    endpoint_validation = interface[endpoint_start:endpoint_end]
-    require_contains(
-        endpoint_validation,
-        "url.port == nil",
-        "InterfaceController must reject AlarmEndpointURL values with explicit ports",
+        network_policy,
+        "components.port != nil",
+        "native endpoint policy must reject explicit ports",
         failures,
     )
     require(
-        "url.port != nil" not in endpoint_validation
-        and "url.port == 443" not in endpoint_validation,
-        "InterfaceController must not allow an explicit AlarmEndpointURL port",
+        "components.port == @443" not in network_policy,
+        "native endpoint policy must not allow explicit default ports",
         failures,
     )
-    require_contains(
-        interface,
-        "url.user == nil",
-        "InterfaceController must reject AlarmEndpointURL values with embedded usernames",
-        failures,
-    )
-    require_contains(
-        interface,
-        "url.password == nil",
-        "InterfaceController must reject AlarmEndpointURL values with embedded passwords",
-        failures,
-    )
-    require_contains(
-        interface,
-        "url.query == nil",
-        "InterfaceController must reject AlarmEndpointURL values with query strings",
-        failures,
-    )
-    require_contains(
-        interface,
-        "url.fragment == nil",
-        "InterfaceController must reject AlarmEndpointURL values with fragments",
-        failures,
-    )
+    for boundary in ("components.user != nil", "components.password != nil", "components.query != nil", "components.fragment != nil"):
+        require_contains(network_policy, boundary, f"native endpoint policy must enforce {boundary}", failures)
     require_contains(
         interface,
         "if let endpoint = alarmEndpointURL()",
@@ -705,8 +629,8 @@ def check_ci(makefile, workflow, failures):
     )
     require_regex(
         makefile,
-        r"^ci:\s+lint\s+test$",
-        "Makefile must expose deterministic lint and test CI checks",
+        r"^ci:\s+lint\s+test\s+mutation-test$",
+        "Makefile must expose deterministic lint, test, and mutation CI checks",
         failures,
     )
     ci_target = re.search(r"^ci:[^\n]*(?:\n\t[^\n]*)*", makefile, re.MULTILINE)
@@ -755,8 +679,8 @@ def check_ci(makefile, workflow, failures):
     )
     require_equal(
         workflow.count("persist-credentials:"),
-        1,
-        "CI workflow must configure checkout credential persistence exactly once",
+        2,
+        "each CI checkout must disable credential persistence exactly once",
         failures,
     )
     require(
@@ -800,6 +724,7 @@ def check_ci(makefile, workflow, failures):
         [
             checkout_action,
             "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405",
+            checkout_action,
         ],
         "CI workflow must use only the reviewed pinned actions",
         failures,
@@ -861,6 +786,7 @@ def main():
     check_svg("docs/device-preview.svg", failures)
 
     interface = read_text("Alarm WatchKit Extension/InterfaceController.swift", failures)
+    network_policy = read_text("Alarm WatchKit Extension/AlarmNetworkPolicy.m", failures)
     storyboard = read_text("Alarm WatchKit App/Base.lproj/Interface.storyboard", failures)
     project = read_text("Alarm.xcodeproj/project.pbxproj", failures)
     podfile = read_text("Podfile", failures)
@@ -928,7 +854,7 @@ def main():
     extension = read_plist("Alarm WatchKit Extension/Info.plist", failures)
     tests = read_plist("AlarmTests/Info.plist", failures)
 
-    check_alarm_endpoint(interface, extension, failures)
+    check_alarm_endpoint(interface, network_policy, extension, failures)
     check_alarm_hour_bounds(interface, storyboard, failures)
     check_watchkit_outlet_safety(interface, failures)
     check_alarm_request_lifecycle(interface, failures)
