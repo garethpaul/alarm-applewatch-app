@@ -15,6 +15,7 @@
 		7FAA94C21AFECF1A00C2F370 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 7FAA94C01AFECF1A00C2F370 /* LaunchScreen.xib */; };
 		7FAA94CE1AFECF1A00C2F370 /* AlarmTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FAA94CD1AFECF1A00C2F370 /* AlarmTests.swift */; };
 		7FAA94E11AFECF2400C2F370 /* InterfaceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FAA94E01AFECF2400C2F370 /* InterfaceController.swift */; };
+		A18A00011B00000100A1A1A1 /* AlarmNetworkPolicy.m in Sources */ = {isa = PBXBuildFile; fileRef = A18A00021B00000100A1A1A1 /* AlarmNetworkPolicy.m */; };
 		7FAA94E31AFECF2400C2F370 /* NotificationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FAA94E21AFECF2400C2F370 /* NotificationController.swift */; };
 		7FAA94E51AFECF2400C2F370 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7FAA94E41AFECF2400C2F370 /* Images.xcassets */; };
 		7FAA94E91AFECF2400C2F370 /* Alarm WatchKit App.app in Resources */ = {isa = PBXBuildFile; fileRef = 7FAA94E81AFECF2400C2F370 /* Alarm WatchKit App.app */; };
@@ -80,6 +81,9 @@
 		7FAA94DE1AFECF2400C2F370 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		7FAA94DF1AFECF2400C2F370 /* PushNotificationPayload.apns */ = {isa = PBXFileReference; lastKnownFileType = text; path = PushNotificationPayload.apns; sourceTree = "<group>"; };
 		7FAA94E01AFECF2400C2F370 /* InterfaceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InterfaceController.swift; sourceTree = "<group>"; };
+		A18A00021B00000100A1A1A1 /* AlarmNetworkPolicy.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AlarmNetworkPolicy.m; sourceTree = "<group>"; };
+		A18A00031B00000100A1A1A1 /* AlarmNetworkPolicy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AlarmNetworkPolicy.h; sourceTree = "<group>"; };
+		A18A00041B00000100A1A1A1 /* Alarm WatchKit Extension-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Alarm WatchKit Extension-Bridging-Header.h"; sourceTree = "<group>"; };
 		7FAA94E21AFECF2400C2F370 /* NotificationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationController.swift; sourceTree = "<group>"; };
 		7FAA94E41AFECF2400C2F370 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		7FAA94E81AFECF2400C2F370 /* Alarm WatchKit App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Alarm WatchKit App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -201,6 +205,9 @@
 		7FAA94DC1AFECF2400C2F370 /* Alarm WatchKit Extension */ = {
 			isa = PBXGroup;
 			children = (
+				A18A00031B00000100A1A1A1 /* AlarmNetworkPolicy.h */,
+				A18A00021B00000100A1A1A1 /* AlarmNetworkPolicy.m */,
+				A18A00041B00000100A1A1A1 /* Alarm WatchKit Extension-Bridging-Header.h */,
 				7FAA94E01AFECF2400C2F370 /* InterfaceController.swift */,
 				7FAA94E21AFECF2400C2F370 /* NotificationController.swift */,
 				7FAA94E41AFECF2400C2F370 /* Images.xcassets */,
@@ -523,6 +530,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A18A00011B00000100A1A1A1 /* AlarmNetworkPolicy.m in Sources */,
 				7FAA94E31AFECF2400C2F370 /* NotificationController.swift in Sources */,
 				7FAA94E11AFECF2400C2F370 /* InterfaceController.swift in Sources */,
 			);
@@ -759,6 +767,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
 				PRODUCT_NAME = "${TARGET_NAME}";
 				SKIP_INSTALL = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "Alarm WatchKit Extension/Alarm WatchKit Extension-Bridging-Header.h";
 			};
 			name = Debug;
 		};
@@ -770,6 +779,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
 				PRODUCT_NAME = "${TARGET_NAME}";
 				SKIP_INSTALL = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "Alarm WatchKit Extension/Alarm WatchKit Extension-Bridging-Header.h";
 			};
 			name = Release;
 		};

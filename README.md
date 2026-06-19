@@ -3,6 +3,11 @@
 <!-- README-OVERVIEW-IMAGE -->
 ![Project overview](docs/readme-overview.svg)
 
+## Device Preview
+
+<!-- DEVICE-PREVIEW-IMAGE -->
+![Device preview](docs/device-preview.svg)
+
 ## Overview
 
 `garethpaul/alarm-applewatch-app` is an Apple platform application or Swift sample. AppleWatch Alarm App
@@ -55,34 +60,64 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 ## Testing and Verification
 
 - `make ci` - runs the dependency-free lint and static contract checks used by GitHub Actions on Python 3.10, 3.12, and 3.14
-- `make check` - runs dependency-free static contracts and attempts an Xcode build when `xcodebuild` is available
+- `make check` - runs portable contracts, mutation tests, native Foundation policy tests on macOS, and parses the Xcode workspace
+- `RUN_LEGACY_XCODE_BUILD=1 make build` - explicitly attempts the historical WatchKit 1 / Swift 1 build with a compatible Xcode 6-era toolchain
 - Xcode's test action or `xcodebuild test` with the appropriate scheme and destination
 
 The static contracts cover endpoint configuration, WatchKit plist relationships,
 notification payload JSON, Xcode target types, and legacy CocoaPods pins. When
 the required SDK or runtime is unavailable, use static checks and source review
 first, then verify on a machine that has the matching platform toolchain.
-GitHub Actions intentionally runs `make ci` on Linux with pinned actions,
-read-only permissions, and manual dispatch; it does not claim to compile or
-execute the legacy WatchKit targets.
+GitHub Actions runs the portable matrix on Linux and the Foundation-native
+network policy suite on macOS with pinned actions and read-only permissions. It
+does not claim to compile or execute the legacy WatchKit targets.
+
+Use [`DEVICE_VERIFICATION.md`](DEVICE_VERIFICATION.md) for the exact-commit
+simulator and paired-device matrix. It covers workspace build, companion and
+WatchKit launch, alarm submission, deactivation cancellation, failures,
+notifications, and privacy-safe evidence while keeping unexecuted rows explicit.
 
 ## Configuration and Secrets
 
 - No required secret or credential file was identified in the repository scan. If you add integrations later, keep secrets out of git.
-- The WatchKit extension reads `AlarmEndpointURL` from `Alarm WatchKit Extension/Info.plist`. Keep local or production endpoints HTTPS-only, parseable with a host, scoped to the `/alarm` path, and free of embedded credentials, query strings, or fragments.
+- The WatchKit extension reads `AlarmEndpointURL` from `Alarm WatchKit Extension/Info.plist`. Keep local or production endpoints HTTPS-only, parseable with a host, on the default HTTPS port, scoped to the `/alarm` path, and free of embedded credentials, query strings, or fragments.
+- Parsed alarm endpoint schemes are canonicalized case-insensitively, so valid
+  mixed-case HTTPS configuration is accepted while plaintext remains rejected.
 - The checked-in `AlarmEndpointURL` value must stay on the non-production
   `example.invalid` placeholder. Runtime validation rejects that sentinel, so
   configure a real alarm host locally before requests can be sent.
+- Placeholder-host rejection is case-insensitive and ignores a trailing root dot,
+  so DNS-equivalent forms of `example.invalid` remain inert.
+- The reserved boundary also rejects subdomains beneath `example.invalid`
+  while preserving distinct near-match hostnames.
 - The WatchKit alarm slider and request code clamp alarm hours to the 5 through
   11 range before integer conversion, displaying, or sending `alarmTime`;
   non-finite programmatic values fall back safely.
 - WatchKit outlets are optional and label updates use optional chaining so a disconnected legacy storyboard outlet does not crash the controller.
 - The WatchKit controller retains only the current alarm request. A replacement
   request or controller deactivation cancels and releases outstanding work.
-- Alarm endpoint validation checks both the HTTPS text prefix and the parsed
-  `NSURL.scheme` before sending a request.
-- Alarm endpoint validation checks the parsed URL path before sending a
-  request, so host-only endpoints do not receive alarm submissions.
+- Completed alarm requests clear only while still current. Failed submissions
+  emit one generic category without endpoint, alarm-time, response, or
+  dependency error details.
+- Alarm changes use POST so the normalized `alarmTime` is not placed in the
+  request URL query string by the client.
+- A dedicated Alamofire manager rejects redirect follow-up requests for alarm
+  submissions without changing redirect behavior for unrelated shared-manager
+  requests.
+- Alarm submissions use an explicit 10-second request timeout and 15-second
+  resource timeout instead of platform-defined session defaults.
+- Alarm submissions use an ephemeral session so cookies, credentials, and cache data are not persisted.
+- Alarm submissions disable cookie, credential, and cache stores so one request cannot influence the next.
+- A Foundation-native policy canonicalizes endpoint URLs and rejects IP
+  literals, legacy numeric IPv4 forms, localhost/local/reserved DNS suffixes,
+  IDN/punycode labels, encoded-path ambiguity, and every previously documented
+  scheme/port/userinfo/query/fragment violation.
+- Alarm responses must remain on the validated URL, return 2xx, declare only
+  JSON/plain-text content when a media type is present, and stay within a
+  4096-byte streamed body cap. Response bytes are discarded rather than stored.
+- DNS answers are not pinned. Use only an authorized static public hostname;
+  production adaptations still need DNS and network-egress controls against
+  rebinding or later private resolution.
 
 ## Security and Privacy Notes
 
@@ -113,6 +148,14 @@ execute the legacy WatchKit targets.
   endpoint path validation.
 - See `docs/plans/2026-06-09-watchkit-endpoint-placeholder-host.md` for the
   checked-in placeholder host guard.
+- See `docs/plans/2026-06-13-watchkit-placeholder-host-canonicalization.md` for
+  case-insensitive and trailing root dot placeholder rejection.
+- See `docs/plans/2026-06-13-watchkit-placeholder-domain-suffix.md` for
+  reserved placeholder subdomain rejection.
+- See `docs/plans/2026-06-13-watchkit-endpoint-scheme-canonicalization.md` for
+  case-insensitive parsed HTTPS validation.
+- See `docs/plans/2026-06-14-watchkit-device-verification-checklist.md` for the
+  simulator/device evidence matrix and runtime non-claims.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 

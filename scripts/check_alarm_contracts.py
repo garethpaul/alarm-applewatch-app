@@ -7,16 +7,21 @@ import plistlib
 import re
 import sys
 from urllib.parse import urlparse
+import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 REQUIRED_FILES = [
+    "AGENTS.md",
     "Alarm.xcworkspace/contents.xcworkspacedata",
     "Alarm.xcodeproj/project.pbxproj",
     "Alarm/Info.plist",
     "Alarm WatchKit App/Info.plist",
     "Alarm WatchKit Extension/Info.plist",
+    "Alarm WatchKit Extension/AlarmNetworkPolicy.h",
+    "Alarm WatchKit Extension/AlarmNetworkPolicy.m",
+    "Alarm WatchKit Extension/Alarm WatchKit Extension-Bridging-Header.h",
     "Alarm WatchKit Extension/InterfaceController.swift",
     "Alarm WatchKit Extension/NotificationController.swift",
     "Alarm WatchKit Extension/PushNotificationPayload.apns",
@@ -24,9 +29,22 @@ REQUIRED_FILES = [
     "AlarmTests/AlarmTests.swift",
     "AlarmTests/Info.plist",
     "docs/plans/2026-06-12-watchkit-nonfinite-alarm-hour.md",
+    "docs/plans/2026-06-13-watchkit-placeholder-host-canonicalization.md",
+    "docs/plans/2026-06-13-watchkit-post-alarm-submission.md",
+    "docs/plans/2026-06-13-watchkit-endpoint-scheme-canonicalization.md",
+    "docs/plans/2026-06-14-watchkit-alarm-redirect-rejection.md",
+    "docs/plans/2026-06-14-watchkit-device-verification-checklist.md",
+    "docs/plans/2026-06-14-watchkit-endpoint-port-guard.md",
+    "docs/plans/2026-06-15-watchkit-isolated-redirect-manager.md",
+    "docs/plans/2026-06-15-watchkit-alarm-request-timeouts.md",
+    "docs/plans/2026-06-19-watchkit-network-boundary-review.md",
+    "DEVICE_VERIFICATION.md",
+    "docs/device-preview.svg",
+    "docs/readme-overview.svg",
     "Podfile",
     "Podfile.lock",
     "README.md",
+    "SECURITY.md",
     ".github/workflows/check.yml",
 ]
 
@@ -55,6 +73,20 @@ def read_plist(relative_path, failures):
         return {}
 
 
+def check_svg(relative_path, failures):
+    path = ROOT / relative_path
+    if not path.exists():
+        failures.append(f"{relative_path} is missing")
+        return
+    try:
+        root = ET.parse(path).getroot()
+    except ET.ParseError as exc:
+        failures.append(f"{relative_path} is not valid XML: {exc}")
+        return
+    require(root.tag.endswith("svg"), f"{relative_path} must have an SVG root element", failures)
+    require("viewBox" in root.attrib, f"{relative_path} must define a viewBox", failures)
+
+
 def require(condition, message, failures):
     if not condition:
         failures.append(message)
@@ -75,6 +107,25 @@ def require_regex(text, pattern, message, failures):
         message,
         failures,
     )
+
+
+def workflow_action_block(workflow, action):
+    lines = workflow.splitlines()
+    action_line = f"uses: {action}"
+
+    for index, line in enumerate(lines):
+        stripped_line = line.strip()
+        if stripped_line == action_line or stripped_line.startswith(f"{action_line} #"):
+            indentation = len(line) - len(line.lstrip())
+            block = [line]
+            for following_line in lines[index + 1 :]:
+                following_indentation = len(following_line) - len(following_line.lstrip())
+                if following_line.lstrip().startswith("- ") and following_indentation <= indentation:
+                    break
+                block.append(following_line)
+            return "\n".join(block)
+
+    return ""
 
 
 def require_no_arbitrary_loads(plist, label, failures):
@@ -116,7 +167,7 @@ def check_required_files(failures):
         require((ROOT / relative_path).exists(), f"{relative_path} is missing", failures)
 
 
-def check_alarm_endpoint(interface, extension_plist, failures):
+def check_alarm_endpoint(interface, network_policy, extension_plist, failures):
     endpoint = extension_plist.get("AlarmEndpointURL")
     parsed_endpoint = urlparse(endpoint) if isinstance(endpoint, str) else None
 
@@ -131,96 +182,80 @@ def check_alarm_endpoint(interface, extension_plist, failures):
         "InterfaceController must read AlarmEndpointURL from extension Info.plist",
         failures,
     )
-    require_contains(
-        interface,
-        "stringByTrimmingCharactersInSet",
-        "alarm endpoint must be trimmed before validation",
+    require(
+        'hasPrefix("https://")' not in interface,
+        "InterfaceController must not use a case-sensitive raw HTTPS prefix gate",
         failures,
     )
     require_contains(
         interface,
-        'hasPrefix("https://")',
-        "InterfaceController must require HTTPS alarm endpoints",
-        failures,
-    )
-    require_contains(
-        interface,
-        "NSURL(string: trimmedEndpoint)",
-        "InterfaceController must parse AlarmEndpointURL before using it",
-        failures,
-    )
-    require_contains(
-        interface,
-        "url.host",
-        "InterfaceController must require a host on AlarmEndpointURL",
+        "AlarmNetworkPolicy.validatedEndpointURL(endpoint)",
+        "InterfaceController must delegate endpoint parsing to the native policy",
         failures,
     )
     require_regex(
-        interface,
-        r"private\s+let\s+alarmEndpointPath\s*=\s*\"/alarm\"",
+        network_policy,
+        r'percentEncodedPath\s+isEqualToString:@"/alarm"',
         "alarm endpoint path must stay explicit as a named constant",
         failures,
     )
-    require_regex(
-        interface,
-        r'private\s+let\s+placeholderAlarmHost\s*=\s*"example\.invalid"',
-        "checked-in placeholder host must stay explicit in source",
+    require_contains(
+        network_policy,
+        "+ (NSString *)canonicalHost:(NSString *)host",
+        "native endpoint policy must canonicalize parsed hosts",
         failures,
     )
     require_contains(
-        interface,
-        "host != placeholderAlarmHost",
-        "InterfaceController must reject the checked-in placeholder host",
+        network_policy,
+        "+ (BOOL)isDisallowedHost:(NSString *)host",
+        "native endpoint policy must classify reserved and local hosts",
+        failures,
+    )
+    require(
+        '@"invalid"' in network_policy
+        and '@"localhost"' in network_policy
+        and '@"local"' in network_policy
+        and '@"internal"' in network_policy
+        and '@"home.arpa"' in network_policy,
+        "native endpoint policy must reject reserved and local DNS suffixes",
         failures,
     )
     require_contains(
-        interface,
-        "url.path",
-        "InterfaceController must inspect the parsed AlarmEndpointURL path",
+        network_policy,
+        "NSASCIIStringEncoding",
+        "native endpoint policy must reject non-ASCII and IDN input",
+        failures,
+    )
+    require(
+        '@"xn--"' in network_policy and 'componentsSeparatedByString:@"."' in network_policy,
+        "native endpoint policy must reject IDN labels and validate DNS labels",
         failures,
     )
     require_contains(
-        interface,
-        "path == alarmEndpointPath",
-        "InterfaceController must require AlarmEndpointURL to use the alarm path",
+        network_policy,
+        "componentsWithString:trimmed",
+        "native endpoint policy must parse AlarmEndpointURL before use",
         failures,
     )
     require_contains(
-        interface,
-        "if let scheme = url.scheme",
-        "InterfaceController must inspect the parsed AlarmEndpointURL scheme",
+        network_policy,
+        '[components.scheme caseInsensitiveCompare:@"https"]',
+        "native endpoint policy must require HTTPS case-insensitively",
         failures,
     )
     require_contains(
-        interface,
-        'scheme == "https"',
-        "InterfaceController must require the parsed AlarmEndpointURL scheme to be HTTPS",
+        network_policy,
+        "components.port != nil",
+        "native endpoint policy must reject explicit ports",
         failures,
     )
-    require_contains(
-        interface,
-        "url.user == nil",
-        "InterfaceController must reject AlarmEndpointURL values with embedded usernames",
+    require(
+        "components.port == @443" not in network_policy,
+        "native endpoint policy must not allow explicit default ports",
         failures,
     )
-    require_contains(
-        interface,
-        "url.password == nil",
-        "InterfaceController must reject AlarmEndpointURL values with embedded passwords",
-        failures,
-    )
-    require_contains(
-        interface,
-        "url.query == nil",
-        "InterfaceController must reject AlarmEndpointURL values with query strings",
-        failures,
-    )
-    require_contains(
-        interface,
-        "url.fragment == nil",
-        "InterfaceController must reject AlarmEndpointURL values with fragments",
-        failures,
-    )
+    for boundary in ("components.user != nil", "components.password != nil", "components.query != nil", "components.fragment != nil"):
+        require_contains(network_policy, boundary, f"native endpoint policy must enforce {boundary}", failures)
     require_contains(
         interface,
         "if let endpoint = alarmEndpointURL()",
@@ -229,13 +264,14 @@ def check_alarm_endpoint(interface, extension_plist, failures):
     )
     require_contains(
         interface,
-        "Alamofire.request(.GET, endpoint, parameters: alarmParameters())",
-        "alarm request must use the validated endpoint and parameter helper",
+        "alarmRequestManager.request(.POST, endpoint, parameters: alarmParameters())",
+        "alarm request must POST to the validated endpoint with normalized parameters",
         failures,
     )
     require(
-        not re.search(r"Alamofire\.request\(\s*\.GET\s*,\s*\"", interface),
-        "alarm request must not inline a URL literal",
+        "Alamofire.request(.GET" not in interface
+        and "alarmRequestManager.request(.GET" not in interface,
+        "alarm submissions must not encode alarmTime into a GET request URL",
         failures,
     )
     require_regex(
@@ -394,8 +430,8 @@ def check_alarm_request_lifecycle(interface, failures):
         interface,
         r"@IBAction\s+func\s+setAlarm\(\)\s*\{\s*"
         r"alarmRequest\?\.cancel\(\)\s*alarmRequest\s*=\s*nil.*"
-        r"alarmRequest\s*=\s*Alamofire\.request\(\.GET,\s*endpoint,\s*"
-        r"parameters:\s*alarmParameters\(\)\)",
+        r"let\s+request\s*=\s*alarmRequestManager\.request\(\.POST,\s*endpoint,\s*"
+        r"parameters:\s*alarmParameters\(\)\)\s*alarmRequest\s*=\s*request",
         "setAlarm must cancel any prior request before retaining its replacement",
         failures,
     )
@@ -408,8 +444,34 @@ def check_alarm_request_lifecycle(interface, failures):
         failures,
     )
     require(
-        interface.count("Alamofire.request(") == 1,
+        interface.count("alarmRequestManager.request(") == 1
+        and "Alamofire.request(" not in interface,
         "InterfaceController must keep a single alarm request creation path",
+        failures,
+    )
+    require_regex(
+        interface,
+        r"let\s+request\s*=\s*alarmRequestManager\.request\(\.POST,\s*endpoint,\s*"
+        r"parameters:\s*alarmParameters\(\)\)\s*alarmRequest\s*=\s*request\s*"
+        r"request\.validate\(\)\.response\s*\{\s*\[weak\s+self\]",
+        "setAlarm must retain and validate one request before observing completion",
+        failures,
+    )
+    require_regex(
+        interface,
+        r"if\s+let\s+controller\s*=\s*self\s*\{\s*"
+        r"if\s+controller\.alarmRequest\s*===\s*request\s*\{\s*"
+        r"controller\.alarmRequest\s*=\s*nil\s*"
+        r"if\s+error\s*!=\s*nil\s*\{\s*"
+        r'NSLog\("Alarm submission failed\."\)',
+        "alarm completion must clear and report only the still-current failed request",
+        failures,
+    )
+    require(
+        interface.count('NSLog("Alarm submission failed.")') == 1
+        and "NSLog(error" not in interface
+        and "NSLog(\"%@\"" not in interface,
+        "alarm completion must keep one generic failure log without dependency details",
         failures,
     )
 
@@ -540,24 +602,51 @@ def check_dependency_and_project_contracts(project, podfile, podfile_lock, failu
 
 
 def check_ci(makefile, workflow, failures):
+    checkout_action = "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10"
     require_contains(
         makefile,
-        "ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))",
-        "Makefile must resolve repository paths from its own location",
+        "override ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))",
+        "Makefile must protect repository paths from command-line overrides",
+        failures,
+    )
+    require_contains(
+        makefile,
+        "PYTHON ?= python3",
+        "Makefile must preserve the Python command override",
+        failures,
+    )
+    require_contains(
+        makefile,
+        "$(ROOT)scripts/check_alarm_contracts.py",
+        "Makefile must use the rooted contract checker path",
+        failures,
+    )
+    require_contains(
+        makefile,
+        "cd $(ROOT) && xcodebuild -workspace Alarm.xcworkspace",
+        "Makefile must run Xcode from the repository root",
         failures,
     )
     require_regex(
         makefile,
-        r"^ci:\s+lint\s+test$",
-        "Makefile must expose deterministic lint and test CI checks",
+        r"^ci:\s+lint\s+test\s+mutation-test$",
+        "Makefile must expose deterministic lint, test, and mutation CI checks",
         failures,
     )
-    require_contains(
+    ci_target = re.search(r"^ci:[^\n]*(?:\n\t[^\n]*)*", makefile, re.MULTILINE)
+    require(
+        ci_target is not None and "xcodebuild" not in ci_target.group(0),
+        "Makefile CI target must not invoke xcodebuild",
+        failures,
+    )
+    require_regex(
         workflow,
-        "permissions:\n  contents: read",
+        r"^permissions:\s*\n  contents: read\s*\n\s*^concurrency:",
         "CI workflow must use read-only repository permissions",
         failures,
     )
+    require_contains(workflow, "pull_request:", "CI workflow must run for pull requests", failures)
+    require_contains(workflow, "push:", "CI workflow must run for pushes", failures)
     require_contains(
         workflow,
         "timeout-minutes: 5",
@@ -578,8 +667,32 @@ def check_ci(makefile, workflow, failures):
     )
     require_contains(
         workflow,
-        "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10",
+        checkout_action,
         "CI workflow must pin actions/checkout",
+        failures,
+    )
+    require_contains(
+        workflow,
+        "persist-credentials: false",
+        "CI workflow must not persist checkout credentials",
+        failures,
+    )
+    require_equal(
+        workflow.count("persist-credentials:"),
+        2,
+        "each CI checkout must disable credential persistence exactly once",
+        failures,
+    )
+    require(
+        "persist-credentials: true" not in workflow,
+        "CI workflow must never enable checkout credential persistence",
+        failures,
+    )
+    checkout_step = workflow_action_block(workflow, checkout_action)
+    require_contains(
+        checkout_step,
+        "\n        with:\n          persist-credentials: false",
+        "checkout step must disable credential persistence in its with block",
         failures,
     )
     require_contains(
@@ -600,10 +713,28 @@ def check_ci(makefile, workflow, failures):
         "CI workflow must support manual dispatch",
         failures,
     )
+    require(
+        "pull_request_target:" not in workflow,
+        "CI workflow must not use pull_request_target",
+        failures,
+    )
+    action_uses = re.findall(r"^\s*-?\s*uses:\s*([^\s#]+)", workflow, re.MULTILINE)
+    require_equal(
+        action_uses,
+        [
+            checkout_action,
+            "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405",
+            checkout_action,
+        ],
+        "CI workflow must use only the reviewed pinned actions",
+        failures,
+    )
     require_contains(workflow, "run: make ci", "CI workflow must run the shared CI target", failures)
 
 
-def check_docs(readme, changes, endpoint_plan, placeholder_plan, inert_placeholder_plan, ci_plan, failures):
+def check_docs(readme, security, changes, endpoint_plan, placeholder_plan, inert_placeholder_plan, ci_plan, failures):
+    require_contains(readme, "docs/readme-overview.svg", "README must embed the project overview", failures)
+    require_contains(readme, "docs/device-preview.svg", "README must embed the device preview", failures)
     require_contains(readme, "Alarm.xcworkspace", "README must direct maintainers to open the workspace", failures)
     require_contains(readme, "make check", "README must document local verification", failures)
     require_contains(readme, "make ci", "README must document deterministic CI verification", failures)
@@ -615,6 +746,35 @@ def check_docs(readme, changes, endpoint_plan, placeholder_plan, inert_placehold
     require_contains(inert_placeholder_plan, "Status: Completed", "inert placeholder plan must be completed", failures)
     require_contains(inert_placeholder_plan, "make check", "inert placeholder plan must record make check", failures)
     require_contains(readme, "example.invalid", "README must document the inert endpoint placeholder", failures)
+    for label, text in {
+        "README": readme,
+        "SECURITY": security,
+        "CHANGES": changes,
+    }.items():
+        require_contains(
+            text,
+            "case-insensitive",
+            f"{label} must document case-insensitive placeholder-host rejection",
+            failures,
+        )
+        require_contains(
+            text,
+            "trailing root dot",
+            f"{label} must document trailing-root-dot placeholder rejection",
+            failures,
+        )
+        require_contains(
+            text,
+            "POST",
+            f"{label} must document POST alarm submission",
+            failures,
+        )
+        require_regex(
+            text,
+            r"request\s+URLs?",
+            f"{label} must document alarmTime URL minimization",
+            failures,
+        )
     require_contains(ci_plan, "Status: Completed", "CI baseline plan must be completed", failures)
 
 
@@ -622,8 +782,11 @@ def main():
     failures = []
 
     check_required_files(failures)
+    check_svg("docs/readme-overview.svg", failures)
+    check_svg("docs/device-preview.svg", failures)
 
     interface = read_text("Alarm WatchKit Extension/InterfaceController.swift", failures)
+    network_policy = read_text("Alarm WatchKit Extension/AlarmNetworkPolicy.m", failures)
     storyboard = read_text("Alarm WatchKit App/Base.lproj/Interface.storyboard", failures)
     project = read_text("Alarm.xcodeproj/project.pbxproj", failures)
     podfile = read_text("Podfile", failures)
@@ -631,7 +794,10 @@ def main():
     makefile = read_text("Makefile", failures)
     workflow = read_text(".github/workflows/check.yml", failures)
     readme = read_text("README.md", failures)
+    security = read_text("SECURITY.md", failures)
+    vision = read_text("VISION.md", failures)
     changes = read_text("CHANGES.md", failures)
+    agents = read_text("AGENTS.md", failures)
     endpoint_plan = read_text("docs/plans/2026-06-08-watchkit-endpoint-contracts.md", failures)
     placeholder_plan = read_text("docs/plans/2026-06-09-watchkit-endpoint-placeholder-host.md", failures)
     inert_placeholder_plan = read_text("docs/plans/2026-06-10-watchkit-inert-endpoint-placeholder.md", failures)
@@ -639,21 +805,152 @@ def main():
     nonfinite_alarm_plan = read_text(
         "docs/plans/2026-06-12-watchkit-nonfinite-alarm-hour.md", failures
     )
+    canonical_host_plan = read_text(
+        "docs/plans/2026-06-13-watchkit-placeholder-host-canonicalization.md",
+        failures,
+    )
+    post_submission_plan = read_text(
+        "docs/plans/2026-06-13-watchkit-post-alarm-submission.md", failures
+    )
+    placeholder_suffix_plan = read_text(
+        "docs/plans/2026-06-13-watchkit-placeholder-domain-suffix.md", failures
+    )
+    scheme_canonicalization_plan = read_text(
+        "docs/plans/2026-06-13-watchkit-endpoint-scheme-canonicalization.md",
+        failures,
+    )
+    make_root_plan = read_text(
+        "docs/plans/2026-06-14-make-root-override-protection.md", failures
+    )
+    response_completion_plan = read_text(
+        "docs/plans/2026-06-14-watchkit-alarm-response-completion.md", failures
+    )
+    redirect_plan = read_text(
+        "docs/plans/2026-06-14-watchkit-alarm-redirect-rejection.md", failures
+    )
+    device_verification_plan = read_text(
+        "docs/plans/2026-06-14-watchkit-device-verification-checklist.md",
+        failures,
+    )
+    endpoint_port_plan = read_text(
+        "docs/plans/2026-06-14-watchkit-endpoint-port-guard.md", failures
+    )
+    isolated_redirect_plan = read_text(
+        "docs/plans/2026-06-15-watchkit-isolated-redirect-manager.md", failures
+    )
+    request_timeout_plan = read_text(
+        "docs/plans/2026-06-15-watchkit-alarm-request-timeouts.md", failures
+    )
+    ephemeral_session_plan = read_text(
+        "docs/plans/2026-06-15-watchkit-ephemeral-alarm-session.md", failures
+    )
+    session_storage_plan = read_text(
+        "docs/plans/2026-06-17-watchkit-session-storage-isolation.md", failures
+    )
+    device_verification = read_text("DEVICE_VERIFICATION.md", failures)
 
     app = read_plist("Alarm/Info.plist", failures)
     watch_app = read_plist("Alarm WatchKit App/Info.plist", failures)
     extension = read_plist("Alarm WatchKit Extension/Info.plist", failures)
     tests = read_plist("AlarmTests/Info.plist", failures)
 
-    check_alarm_endpoint(interface, extension, failures)
+    check_alarm_endpoint(interface, network_policy, extension, failures)
     check_alarm_hour_bounds(interface, storyboard, failures)
     check_watchkit_outlet_safety(interface, failures)
     check_alarm_request_lifecycle(interface, failures)
+    require_regex(
+        interface,
+        r"private\s+let\s+alarmRequestManager:\s*Manager\s*=\s*\{\s*"
+        r"let\s+configuration\s*=\s*NSURLSessionConfiguration\.ephemeralSessionConfiguration\(\)\s*"
+        r"configuration\.HTTPShouldSetCookies\s*=\s*false\s*"
+        r"configuration\.HTTPCookieStorage\s*=\s*nil\s*"
+        r"configuration\.URLCredentialStorage\s*=\s*nil\s*"
+        r"configuration\.URLCache\s*=\s*nil\s*"
+        r"configuration\.HTTPAdditionalHeaders\s*=\s*Manager\.defaultHTTPHeaders\s*"
+        r"configuration\.timeoutIntervalForRequest\s*=\s*alarmRequestTimeout\s*"
+        r"configuration\.timeoutIntervalForResource\s*=\s*alarmResourceTimeout\s*"
+        r"let\s+manager\s*=\s*Manager\(configuration:\s*configuration\)",
+        "alarm submissions must use a dedicated bounded ephemeral Alamofire manager",
+        failures,
+    )
+    for label, text in (
+        ("README", readme),
+        ("security guidance", security),
+        ("vision", vision),
+        ("agent guidance", agents),
+        ("changes", changes),
+    ):
+        require_contains(
+            text,
+            "Alarm submissions disable cookie, credential, and cache stores so one request cannot influence the next.",
+            f"{label} must document alarm session storage isolation",
+            failures,
+        )
+    for contract in (
+        "Status: Completed",
+        "HTTPShouldSetCookies",
+        "HTTPCookieStorage",
+        "URLCredentialStorage",
+        "URLCache",
+        "make check",
+        "hostile mutations",
+    ):
+        require_contains(
+            session_storage_plan,
+            contract,
+            f"session storage isolation plan must keep contract: {contract}",
+            failures,
+        )
+    for label, text in (
+        ("README", readme),
+        ("security guidance", security),
+        ("vision", vision),
+        ("agent guidance", agents),
+        ("changes", changes),
+    ):
+        require_contains(
+            text,
+            "Alarm submissions use an ephemeral session so cookies, credentials, and cache data are not persisted.",
+            f"{label} must document ephemeral alarm session privacy",
+            failures,
+        )
+    for contract in (
+        "Status: Completed",
+        "ephemeralSessionConfiguration",
+        "make check",
+        "hostile mutations",
+    ):
+        require_contains(
+            ephemeral_session_plan,
+            contract,
+            f"ephemeral alarm session plan must keep contract: {contract}",
+            failures,
+        )
+    require(
+        "Manager.sharedInstance" not in interface,
+        "alarm submissions must not mutate the process-wide Alamofire shared manager",
+        failures,
+    )
+    require_regex(
+        interface,
+        r"taskWillPerformHTTPRedirection\s*=\s*\{\s*"
+        r"\(_,\s*_,\s*_,\s*_\)\s+in\s*return\s+nil\s*\}",
+        "alarm redirect hook must reject the follow-up request",
+        failures,
+    )
+    require(
+        0
+        <= interface.find("taskWillPerformHTTPRedirection")
+        < interface.find("return manager")
+        < interface.find("alarmRequestManager.request(.POST"),
+        "alarm redirect rejection must be configured before request creation",
+        failures,
+    )
     check_plist_contracts(app, watch_app, extension, tests, failures)
     check_push_payload(failures)
     check_dependency_and_project_contracts(project, podfile, podfile_lock, failures)
     check_ci(makefile, workflow, failures)
-    check_docs(readme, changes, endpoint_plan, placeholder_plan, inert_placeholder_plan, ci_plan, failures)
+    check_docs(readme, security, changes, endpoint_plan, placeholder_plan, inert_placeholder_plan, ci_plan, failures)
     require_contains(
         nonfinite_alarm_plan,
         "Status: Completed",
@@ -664,6 +961,324 @@ def main():
         nonfinite_alarm_plan,
         "make check",
         "non-finite alarm-hour plan must record make check",
+        failures,
+    )
+    require_contains(
+        canonical_host_plan,
+        "Status: Completed",
+        "placeholder-host canonicalization plan must be completed",
+        failures,
+    )
+    require_contains(
+        post_submission_plan,
+        "Status: Completed",
+        "POST alarm-submission plan must be completed",
+        failures,
+    )
+    require_contains(
+        placeholder_suffix_plan,
+        "Status: Completed",
+        "placeholder-domain suffix plan must be completed",
+        failures,
+    )
+    require_contains(
+        placeholder_suffix_plan,
+        "hostile mutations",
+        "placeholder-domain suffix plan must record hostile mutation evidence",
+        failures,
+    )
+    require_contains(
+        scheme_canonicalization_plan,
+        "Status: Completed",
+        "endpoint scheme canonicalization plan must be completed",
+        failures,
+    )
+    require_contains(
+        scheme_canonicalization_plan,
+        "make check",
+        "endpoint scheme canonicalization plan must record make check",
+        failures,
+    )
+    require(
+        "hostile mutations" in scheme_canonicalization_plan.lower(),
+        "endpoint scheme canonicalization plan must record hostile mutations",
+        failures,
+    )
+    require_contains(
+        make_root_plan,
+        "Status: Completed",
+        "Make root protection plan must be completed",
+        failures,
+    )
+    require_contains(
+        make_root_plan,
+        "make check",
+        "Make root protection plan must record make check",
+        failures,
+    )
+    require(
+        "mutations" in make_root_plan.lower(),
+        "Make root protection plan must record mutation evidence",
+        failures,
+    )
+    require_contains(
+        readme,
+        "schemes are canonicalized case-insensitively",
+        "README must document parsed endpoint scheme canonicalization",
+        failures,
+    )
+    require_contains(
+        security,
+        "scheme is compared case-insensitively",
+        "security guidance must document parsed endpoint scheme canonicalization",
+        failures,
+    )
+    require_contains(
+        vision,
+        "Canonicalize parsed endpoint schemes case-insensitively",
+        "vision must preserve parsed endpoint scheme canonicalization",
+        failures,
+    )
+    require_contains(
+        changes,
+        "parsed HTTPS scheme validation case-insensitive",
+        "changes must record parsed endpoint scheme canonicalization",
+        failures,
+    )
+    require_contains(
+        readme,
+        "subdomains beneath `example.invalid`",
+        "README must document reserved placeholder subdomain rejection",
+        failures,
+    )
+    require_contains(
+        security,
+        "reserved placeholder domain",
+        "security guidance must document the reserved placeholder domain boundary",
+        failures,
+    )
+    require_contains(
+        vision,
+        "reserved placeholder subdomains",
+        "vision must preserve reserved placeholder subdomain rejection",
+        failures,
+    )
+    require_contains(
+        changes,
+        "placeholder subdomains",
+        "changes must record placeholder subdomain rejection",
+        failures,
+    )
+    require_contains(
+        response_completion_plan,
+        "Status: Completed",
+        "alarm response completion plan must be completed",
+        failures,
+    )
+    require_contains(
+        response_completion_plan,
+        "make check",
+        "alarm response completion plan must record make check",
+        failures,
+    )
+    require(
+        "mutations" in response_completion_plan.lower(),
+        "alarm response completion plan must record mutation evidence",
+        failures,
+    )
+    require_contains(
+        redirect_plan,
+        "Status: Completed",
+        "alarm redirect rejection plan must be completed",
+        failures,
+    )
+    require_contains(
+        redirect_plan,
+        "make check",
+        "alarm redirect rejection plan must record make check",
+        failures,
+    )
+    require(
+        "mutations" in redirect_plan.lower(),
+        "alarm redirect rejection plan must record mutation evidence",
+        failures,
+    )
+    require(
+        re.search(r"rejects\s+redirect follow-up requests", readme)
+        and re.search(r"reject\s+redirect follow-up requests", security)
+        and "Reject alarm redirect follow-up requests" in vision
+        and "Rejected alarm redirect follow-up requests" in changes,
+        "alarm redirect rejection must remain documented",
+        failures,
+    )
+    require_contains(
+        readme,
+        "Completed alarm requests clear only while still current",
+        "README must document current-request completion handling",
+        failures,
+    )
+    require_contains(
+        security,
+        "generic alarm submission failure",
+        "security guidance must document generic alarm failure logging",
+        failures,
+    )
+    require_contains(
+        vision,
+        "Validate alarm responses and ignore stale completion callbacks",
+        "vision must preserve alarm response completion handling",
+        failures,
+    )
+    require_contains(
+        changes,
+        "Validated alarm responses",
+        "changes must record alarm response completion handling",
+        failures,
+    )
+    require_contains(
+        post_submission_plan,
+        "make check",
+        "POST alarm-submission plan must record make check",
+        failures,
+    )
+    require_contains(
+        post_submission_plan,
+        "hostile mutations",
+        "POST alarm-submission plan must record hostile mutations",
+        failures,
+    )
+    require_contains(
+        canonical_host_plan,
+        "make check",
+        "placeholder-host canonicalization plan must record make check",
+        failures,
+    )
+    require_contains(
+        canonical_host_plan,
+        "hostile mutations",
+        "placeholder-host canonicalization plan must record hostile mutations",
+        failures,
+    )
+    for contract in (
+        "commit SHA and pull request",
+        "Open `Alarm.xcworkspace`",
+        "Watch app deactivation",
+        "Repeated submission",
+        "Redirect response",
+        "PushNotificationPayload.apns",
+        "Do not convert `not run` into passing evidence.",
+        "endpoint URL, alarm time, credentials",
+        "every simulator and physical-device row as",
+        "unexecuted",
+    ):
+        require_contains(
+            device_verification,
+            contract,
+            "WatchKit device verification checklist must keep runtime evidence contract",
+            failures,
+        )
+    require(
+        "DEVICE_VERIFICATION.md" in readme
+        and "keeping unexecuted rows explicit" in readme
+        and "device verification matrix" in vision.lower()
+        and "every runtime row explicitly unexecuted" in changes,
+        "Repository guidance must document the unexecuted WatchKit runtime matrix",
+        failures,
+    )
+    require(
+        "Status: Completed" in device_verification_plan
+        and "make check" in device_verification_plan
+        and "hostile mutations" in device_verification_plan
+        and "No Xcode, simulator, or physical-device scenario was executed"
+        in device_verification_plan,
+        "WatchKit device verification plan must record completed portable evidence and runtime non-claims",
+        failures,
+    )
+    require(
+        "Status: Completed" in endpoint_port_plan
+        and "make check" in endpoint_port_plan
+        and "hostile mutations" in endpoint_port_plan
+        and "hosted" in endpoint_port_plan.lower(),
+        "WatchKit endpoint port plan must record completed local and hosted verification boundaries",
+        failures,
+    )
+    require(
+        "default HTTPS port" in readme
+        and "use no explicit port" in security
+        and "explicit port" in changes,
+        "Repository guidance must document the default-port-only alarm endpoint boundary",
+        failures,
+    )
+    require(
+        "dedicated Alamofire manager" in readme
+        and "process-wide shared manager" in security
+        and "dedicated Alamofire manager" in changes,
+        "Repository guidance must document alarm redirect-manager isolation",
+        failures,
+    )
+    require(
+        "Status: Completed" in isolated_redirect_plan
+        and "focused portable contract check" in isolated_redirect_plan
+        and "repository-root and external-directory `make check`" in isolated_redirect_plan
+        and "isolated hostile mutations" in isolated_redirect_plan
+        and "git diff --check" in isolated_redirect_plan
+        and "generated-artifact and likely-secret audits" in isolated_redirect_plan,
+        "WatchKit isolated redirect-manager plan must record completed verification",
+        failures,
+    )
+    require_regex(
+        interface,
+        r"private\s+let\s+alarmRequestTimeout\s*:\s*NSTimeInterval\s*=\s*10\.0",
+        "Alarm request timeout must remain an explicit 10-second constant",
+        failures,
+    )
+    require_regex(
+        interface,
+        r"private\s+let\s+alarmResourceTimeout\s*:\s*NSTimeInterval\s*=\s*15\.0",
+        "Alarm resource timeout must remain an explicit 15-second constant",
+        failures,
+    )
+    request_timeout_assignment = (
+        "configuration.timeoutIntervalForRequest = alarmRequestTimeout"
+    )
+    resource_timeout_assignment = (
+        "configuration.timeoutIntervalForResource = alarmResourceTimeout"
+    )
+    manager_construction = "let manager = Manager(configuration: configuration)"
+    require_contains(
+        interface,
+        request_timeout_assignment,
+        "Alarm manager configuration must apply the request timeout",
+        failures,
+    )
+    require_contains(
+        interface,
+        resource_timeout_assignment,
+        "Alarm manager configuration must apply the resource timeout",
+        failures,
+    )
+    require(
+        interface.find(request_timeout_assignment) < interface.find(manager_construction)
+        and interface.find(resource_timeout_assignment) < interface.find(manager_construction),
+        "Alarm timeouts must be configured before manager construction",
+        failures,
+    )
+    require(
+        "10-second request timeout" in readme
+        and "15-second resource timeout" in security
+        and "bounded alarm request and resource timeouts" in agents
+        and "Bounded alarm submissions" in changes,
+        "Repository guidance must document bounded alarm submission timeouts",
+        failures,
+    )
+    require(
+        "Status: Completed" in request_timeout_plan
+        and "focused portable contract checker" in request_timeout_plan
+        and "repository-root and external-directory `make check`" in request_timeout_plan
+        and "isolated hostile mutations" in request_timeout_plan
+        and "artifact, conflict-marker, large-file, and likely-secret audits"
+        in request_timeout_plan,
+        "WatchKit alarm request-timeout plan must record completed verification",
         failures,
     )
 

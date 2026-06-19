@@ -1,10 +1,66 @@
 # Changes
 
+## 2026-06-19
+
+- Rejected private/local, numeric, IDN, reserved, and ambiguous alarm endpoint
+  destinations through a shared Foundation-native policy.
+- Validated final response URL, status, declared media type, and body length;
+  discarded response bytes and cancelled transfers above 4096 bytes.
+- Added native fake-network, structural, and mutation-sensitive tests plus a
+  hosted macOS policy gate.
+- Made the unsupported WatchKit 1 / Swift 1 build an explicit Xcode 6-era opt-in
+  while keeping workspace parsing in the portable macOS baseline.
+
+## 2026-06-17
+
+- Alarm submissions disable cookie, credential, and cache stores so one request cannot influence the next.
+
+## 2026-06-15
+
+- Alarm submissions use an ephemeral session so cookies, credentials, and cache data are not persisted.
+- Bounded alarm submissions with explicit request and resource timeouts on the
+  dedicated WatchKit session manager.
+- Scoped alarm redirect refusal to a dedicated Alamofire manager so submitting
+  an alarm cannot change redirect behavior for unrelated shared-manager
+  requests.
+
+## 2026-06-14
+
+- Rejected alarm endpoint configuration with an explicit port so validated
+  requests stay on the default HTTPS origin.
+- Validated alarm responses, released the still-current request on completion,
+  and logged failures without endpoint, alarm-time, response, or dependency
+  details.
+- Added mutation-sensitive completion, stale-callback, documentation, and plan
+  contracts.
+- Rejected alarm redirect follow-up requests through Alamofire's pinned session
+  delegate before another target can receive the POST.
+- Added an exact-commit WatchKit simulator and paired-device verification matrix
+  for launch, alarm requests, lifecycle cancellation, failures, notifications,
+  and privacy-safe evidence, with every runtime row explicitly unexecuted.
+
+## 2026-06-13
+
+- Made parsed HTTPS scheme validation case-insensitive and removed the raw
+  lowercase-prefix gate while preserving every endpoint boundary.
+- Made the reserved alarm placeholder comparison case-insensitive and
+  independent of a trailing root dot.
+- Extended static contracts and security guidance for DNS-equivalent
+  `example.invalid` forms.
+- Changed the state-changing alarm submission from GET to POST so `alarmTime`
+  is not encoded into request URLs.
+- Added portable method, documentation, and completed-plan contracts.
+- Rejected the full `example.invalid` placeholder subdomain namespace while
+  preserving unrelated hostname near matches.
+- Added mutation-sensitive contracts and guidance for placeholder subdomains.
+
 ## 2026-06-12
 
 - Guarded WatchKit alarm-hour float conversion so `NaN`, infinities, and
   extreme programmatic values clamp before reaching `Int` conversion.
 - Added static contracts and a completed plan for the safe conversion order.
+- Bound the single disabled checkout credential setting to the checkout action
+  so moving or overriding it cannot satisfy the CI safety contract.
 
 ## 2026-06-10
 

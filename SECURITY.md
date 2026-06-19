@@ -30,10 +30,37 @@ Helpful reports include:
 - Review found file, document, data, or media parsing flows; changes in those areas should receive security-focused review before merge.
 - Review found database, model, query, or persistence-related code; changes in those areas should receive security-focused review before merge.
 - Dependency manifests detected: Podfile, Podfile.lock. Dependency updates should preserve lockfiles when present and avoid introducing packages without a clear maintenance reason.
-- Alarm endpoint configuration should remain HTTPS, credential-free, and scoped
-  to the explicit `/alarm` path.
+- Alarm endpoint configuration should remain HTTPS, use no explicit port, stay
+  credential-free, and remain scoped to the explicit `/alarm` path.
 - Alarm-hour inputs must be bounded while still represented as floats so
   non-finite or extreme values cannot trap during integer conversion.
+- The reserved alarm placeholder comparison is case-insensitive and ignores a
+  trailing root dot so DNS-equivalent `example.invalid` hosts cannot enable the
+  request path.
+- The reserved placeholder domain includes `example.invalid` and its
+  dot-delimited subdomains; deceptive near matches are not classified by a
+  delimiter-free suffix check.
+- Alarm submissions use POST to keep the normalized `alarmTime` out of request
+  URLs and the proxy, server, analytics, or diagnostic logs that retain them.
+- Alarm submissions reject redirect follow-up requests through a dedicated
+  Alamofire manager without mutating the process-wide shared manager.
+- Alarm submissions use a 10-second request timeout and 15-second resource timeout
+  so a stalled endpoint cannot retain the watch request indefinitely.
+- Alarm submissions use an ephemeral session so cookies, credentials, and cache data are not persisted.
+- Alarm submissions disable cookie, credential, and cache stores so one request cannot influence the next.
+- Alarm endpoint validation accepts only canonical ASCII public-DNS-shaped
+  hosts and rejects IP literals, legacy numeric IPv4 forms, IDN/punycode,
+  localhost, local/reserved suffixes, and encoded path ambiguity.
+- Alarm responses must stay on the validated URL, return 2xx, use an allowed
+  declared media type, and remain within the 4096-byte streamed body limit.
+  Response bytes are discarded rather than retained by Alamofire.
+- URL validation does not pin DNS answers. A trusted hostname can still resolve
+  or rebind to a private address after validation, so production use requires an
+  authorized static endpoint plus DNS and egress controls.
+- Response validation emits only a generic alarm submission failure for the
+  still-current request; stale callbacks and dependency details are ignored.
+- The parsed endpoint scheme is compared case-insensitively; raw string prefixes
+  must not replace the parsed HTTPS-only transport boundary.
 
 ## Mobile Privacy Notes
 

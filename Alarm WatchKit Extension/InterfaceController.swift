@@ -10,10 +10,43 @@ import Foundation
 import Alamofire
 
 private let alarmTimeParameter = "alarmTime"
-private let alarmEndpointPath = "/alarm"
-private let placeholderAlarmHost = "example.invalid"
 private let minimumAlarmHour = 5
 private let maximumAlarmHour = 11
+private let alarmRequestTimeout: NSTimeInterval = 10.0
+private let alarmResourceTimeout: NSTimeInterval = 15.0
+private let alarmResponseBodyGate = AlarmResponseBodyGate()
+private let alarmRequestManager: Manager = {
+    let configuration = NSURLSessionConfiguration.ephemeralSessionConfiguration()
+    configuration.HTTPShouldSetCookies = false
+    configuration.HTTPCookieStorage = nil
+    configuration.URLCredentialStorage = nil
+    configuration.URLCache = nil
+    configuration.HTTPAdditionalHeaders = Manager.defaultHTTPHeaders
+    configuration.timeoutIntervalForRequest = alarmRequestTimeout
+    configuration.timeoutIntervalForResource = alarmResourceTimeout
+    let manager = Manager(configuration: configuration)
+    manager.delegate.taskWillPerformHTTPRedirection = {
+        (_, _, _, _) in
+        return nil
+    }
+    manager.delegate.dataTaskDidReceiveResponse = {
+        (_, dataTask, response) in
+        if let requestURL = dataTask.originalRequest?.URL {
+            if AlarmNetworkPolicy.isAcceptableResponse(response, requestURL: requestURL) {
+                alarmResponseBodyGate.resetTask(dataTask)
+                return .Allow
+            }
+        }
+        return .Cancel
+    }
+    manager.delegate.dataTaskDidReceiveData = {
+        (_, dataTask, data) in
+        if alarmResponseBodyGate.shouldCancelTask(dataTask, afterReceivingData: data) {
+            dataTask.cancel()
+        }
+    }
+    return manager
+}()
 
 func normalizedAlarmHour(hour: Int) -> Int {
     if hour < minimumAlarmHour {
@@ -49,26 +82,8 @@ func alarmDisplayText(hour: Int) -> String {
 
 func alarmEndpointURL() -> String? {
     if let endpoint = NSBundle.mainBundle().objectForInfoDictionaryKey("AlarmEndpointURL") as? String {
-        let trimmedEndpoint = endpoint.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet())
-        if count(trimmedEndpoint) > 0 && trimmedEndpoint.hasPrefix("https://") {
-            if let url = NSURL(string: trimmedEndpoint) {
-                if let host = url.host {
-                    if let scheme = url.scheme {
-                        if let path = url.path {
-                            if scheme == "https" &&
-                                count(host) > 0 &&
-                                host != placeholderAlarmHost &&
-                                path == alarmEndpointPath &&
-                                url.user == nil &&
-                                url.password == nil &&
-                                url.query == nil &&
-                                url.fragment == nil {
-                                return trimmedEndpoint
-                            }
-                        }
-                    }
-                }
-            }
+        if let URL = AlarmNetworkPolicy.validatedEndpointURL(endpoint) {
+            return URL.absoluteString
         }
     }
 
@@ -94,7 +109,21 @@ class InterfaceController: WKInterfaceController {
         alarmRequest = nil
 
         if let endpoint = alarmEndpointURL() {
-            alarmRequest = Alamofire.request(.GET, endpoint, parameters: alarmParameters())
+            let request = alarmRequestManager.request(.POST, endpoint, parameters: alarmParameters())
+            alarmRequest = request
+            request.validate().response { [weak self] (_, _, _, error) in
+                if let dataTask = request.task as? NSURLSessionDataTask {
+                    alarmResponseBodyGate.forgetTask(dataTask)
+                }
+                if let controller = self {
+                    if controller.alarmRequest === request {
+                        controller.alarmRequest = nil
+                        if error != nil {
+                            NSLog("Alarm submission failed.")
+                        }
+                    }
+                }
+            }
         } else {
             NSLog("Alarm endpoint is not configured; skipping alarm request.")
         }

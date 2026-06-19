@@ -23,18 +23,30 @@ Priority:
 - Make the alarm endpoint behavior visible rather than hidden in source code
 - Require alarm endpoints to be parseable HTTPS URLs with hosts
 - Validate the parsed alarm endpoint scheme before network requests
+- Canonicalize parsed endpoint schemes case-insensitively while requiring HTTPS
 - Require alarm endpoints to stay scoped to the explicit `/alarm` path
 - Reject alarm endpoint URLs that embed credentials
 - Reject alarm endpoint URLs that carry query strings or fragments
+- Reject direct local/private destinations, legacy numeric hosts, IDN labels,
+  and encoded-path ambiguity before request creation
 - Keep the checked-in alarm endpoint on a non-resolving placeholder host and
   reject that sentinel at runtime
+- Reject reserved placeholder subdomains without treating unrelated suffix
+  near matches as placeholders
 - Keep the WatchKit alarm-hour range explicit in code and static contracts
 - Clamp non-finite and extreme alarm-hour values before integer conversion
 - Keep storyboard-backed outlet updates nil-safe while the legacy interface is
   preserved
 - Keep only one alarm submission in flight and cancel it when the watch
   interface deactivates
+- Validate alarm responses and ignore stale completion callbacks
+- Bound and discard alarm response bodies instead of buffering unused content
+- Reject alarm redirect follow-up requests before transmission
+- Alarm submissions use an ephemeral session so cookies, credentials, and cache data are not persisted.
+- Alarm submissions disable cookie, credential, and cache stores so one request cannot influence the next.
 - Avoid changes that require unavailable Apple tooling without documenting them
+- Keep exact-commit simulator and paired-device evidence separate from portable
+  static contracts, with unexecuted rows recorded explicitly
 
 Next priorities:
 
@@ -42,6 +54,8 @@ Next priorities:
 - Prefer HTTPS and documented transport expectations
 - Update the Swift, WatchKit, CocoaPods, and Alamofire stack in a dedicated pass
 - Replace placeholder tests with coverage around extracted app behavior
+- Execute the WatchKit device verification matrix with an authorized HTTPS test
+  endpoint and privacy-safe evidence
 
 Contribution rules:
 
