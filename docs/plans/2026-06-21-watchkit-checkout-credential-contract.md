@@ -19,7 +19,12 @@ passed every existing checkout contract.
 - Extract every matching checkout action block instead of returning the first.
 - Require both reviewed checkout blocks to contain the adjacent disabled
   credential setting.
+- Require exactly the reviewed portable and native verification commands so a
+  checkout-only job or injected credential command cannot satisfy the static
+  contract.
 - Add the reproduced native-job decoy as a permanent hostile mutation.
+- Add native-command removal and injected-command attacks as permanent hostile
+  mutations.
 - Document the stronger two-step ownership boundary.
 
 ## Verification
@@ -28,5 +33,7 @@ passed every existing checkout contract.
 - Hostile `ROOT` invocation of the portable CI target.
 - The pre-change native checkout decoy reproduction passes the old contract and
   fails the strengthened checker at the intended checkout-step assertion.
+- Removing the native command and injecting an additional credential command
+  both fail at the exact workflow-command assertion.
 - `git diff --check`, strict repository integrity checks, and changed-file
   credential-shape scanning.

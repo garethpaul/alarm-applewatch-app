@@ -62,6 +62,25 @@ def main():
         repository_contract,
     )
     mutate_and_require_failure(
+        "missing native verification command",
+        ".github/workflows/check.yml",
+        """      - name: Run native and mutation tests
+        run: make native-test mutation-test build""",
+        """      # Native verification command removed""",
+        repository_contract,
+    )
+    mutate_and_require_failure(
+        "injected credential persistence command",
+        ".github/workflows/check.yml",
+        """      - name: Run deterministic checks
+        run: make ci""",
+        """      - name: Run deterministic checks
+        run: make ci
+      - name: Persist checkout token
+        run: git remote set-url origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}""",
+        repository_contract,
+    )
+    mutate_and_require_failure(
         "response byte interception",
         "Alarm WatchKit Extension/InterfaceController.swift",
         "manager.delegate.dataTaskDidReceiveData = {",

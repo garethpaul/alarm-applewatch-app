@@ -743,7 +743,13 @@ def check_ci(makefile, workflow, failures):
         "CI workflow must use only the reviewed pinned actions",
         failures,
     )
-    require_contains(workflow, "run: make ci", "CI workflow must run the shared CI target", failures)
+    run_commands = re.findall(r"^\s*run:\s*([^\n#]+?)\s*$", workflow, re.MULTILINE)
+    require_equal(
+        run_commands,
+        ["make ci", "make native-test mutation-test build"],
+        "CI workflow must run only the reviewed portable and native verification commands",
+        failures,
+    )
 
 
 def check_docs(readme, security, changes, endpoint_plan, placeholder_plan, inert_placeholder_plan, ci_plan, failures):
