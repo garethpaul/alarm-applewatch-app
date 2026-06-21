@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-21
+
+- Required every hosted checkout step to own its adjacent credential-isolation
+  setting and added a native-job decoy mutation that the previous first-step
+  contract accepted.
+
 ## 2026-06-19
 
 - Rejected private/local, numeric, IDN, reserved, and ambiguous alarm endpoint
