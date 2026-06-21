@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import plistlib
 import re
+import subprocess
 import sys
 from urllib.parse import urlparse
 import xml.etree.ElementTree as ET
@@ -109,29 +110,56 @@ def require_regex(text, pattern, message, failures):
     )
 
 
-def workflow_action_blocks(workflow, action):
-    lines = workflow.splitlines()
-    action_line = f"uses: {action}"
-    blocks = []
+def parse_workflow_yaml(workflow, failures):
+    ruby = r"""
+def reject_duplicate_mapping_keys(node, visitor)
+  case node
+  when Psych::Nodes::Mapping
+    seen = {}
+    node.children.each_slice(2) do |key_node, value_node|
+      unless key_node.is_a?(Psych::Nodes::Scalar)
+        raise "workflow mapping keys must be scalar values"
+      end
+      key = visitor.accept(key_node)
+      identity = [key.class.name, key]
+      if seen.key?(identity)
+        raise "duplicate mapping key #{key.inspect} at line #{key_node.start_line + 1}"
+      end
+      seen[identity] = true
+      reject_duplicate_mapping_keys(value_node, visitor)
+    end
+  when Psych::Nodes::Sequence, Psych::Nodes::Document, Psych::Nodes::Stream
+    node.children.each { |child| reject_duplicate_mapping_keys(child, visitor) }
+  end
+end
 
-    for index, line in enumerate(lines):
-        stripped_line = line.strip()
-        if stripped_line == action_line or stripped_line.startswith(f"{action_line} #"):
-            indentation = len(line) - len(line.lstrip())
-            block = [line]
-            for following_line in lines[index + 1 :]:
-                following_indentation = len(following_line) - len(
-                    following_line.lstrip()
-                )
-                if (
-                    following_line.lstrip().startswith("- ")
-                    and following_indentation <= indentation
-                ):
-                    break
-                block.append(following_line)
-            blocks.append("\n".join(block))
-
-    return blocks
+syntax_tree = Psych.parse_stream(STDIN.read)
+reject_duplicate_mapping_keys(syntax_tree, Psych::Visitors::ToRuby.create)
+workflow = syntax_tree.to_yaml
+document = YAML.safe_load(workflow, aliases: true)
+raise "workflow root must be a mapping" unless document.is_a?(Hash)
+document["on"] = document.delete(true) if document.key?(true) && !document.key?("on")
+STDOUT.write(JSON.generate(document))
+"""
+    try:
+        result = subprocess.run(
+            ["ruby", "--disable-gems", "-rjson", "-ryaml", "-e", ruby],
+            input=workflow,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+    except OSError as error:
+        failures.append(f"CI workflow YAML parser is unavailable: {error}")
+        return {}
+    if result.returncode != 0:
+        failures.append(f"CI workflow must be valid YAML: {result.stderr.strip()}")
+        return {}
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        failures.append(f"CI workflow parser returned invalid JSON: {error}")
+        return {}
 
 
 def require_no_arbitrary_loads(plist, label, failures):
@@ -609,6 +637,7 @@ def check_dependency_and_project_contracts(project, podfile, podfile_lock, failu
 
 def check_ci(makefile, workflow, failures):
     checkout_action = "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10"
+    setup_python_action = "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405"
     require_contains(
         makefile,
         "override ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))",
@@ -645,109 +674,61 @@ def check_ci(makefile, workflow, failures):
         "Makefile CI target must not invoke xcodebuild",
         failures,
     )
-    require_regex(
-        workflow,
-        r"^permissions:\s*\n  contents: read\s*\n\s*^concurrency:",
-        "CI workflow must use read-only repository permissions",
-        failures,
-    )
-    require_contains(workflow, "pull_request:", "CI workflow must run for pull requests", failures)
-    require_contains(workflow, "push:", "CI workflow must run for pushes", failures)
-    require_contains(
-        workflow,
-        "timeout-minutes: 5",
-        "CI workflow must have a bounded timeout",
-        failures,
-    )
-    require_contains(
-        workflow,
-        "runs-on: ubuntu-24.04",
-        "CI workflow must use a fixed Ubuntu runner image",
-        failures,
-    )
-    require_contains(
-        workflow,
-        "cancel-in-progress: true",
-        "CI workflow must cancel superseded runs",
-        failures,
-    )
-    require_contains(
-        workflow,
-        checkout_action,
-        "CI workflow must pin actions/checkout",
-        failures,
-    )
-    require_contains(
-        workflow,
-        "persist-credentials: false",
-        "CI workflow must not persist checkout credentials",
-        failures,
-    )
+    expected_workflow = {
+        "name": "Check",
+        "on": {
+            "pull_request": None,
+            "push": {"branches": ["master"]},
+            "workflow_dispatch": None,
+        },
+        "permissions": {"contents": "read"},
+        "concurrency": {
+            "group": "check-${{ github.workflow }}-${{ github.ref }}",
+            "cancel-in-progress": True,
+        },
+        "jobs": {
+            "static-contracts": {
+                "runs-on": "ubuntu-24.04",
+                "timeout-minutes": 5,
+                "strategy": {
+                    "fail-fast": False,
+                    "matrix": {"python-version": ["3.10", "3.12", "3.14"]},
+                },
+                "steps": [
+                    {
+                        "name": "Check out repository",
+                        "uses": checkout_action,
+                        "with": {"persist-credentials": False},
+                    },
+                    {
+                        "name": "Set up Python",
+                        "uses": setup_python_action,
+                        "with": {"python-version": "${{ matrix.python-version }}"},
+                    },
+                    {"name": "Run deterministic checks", "run": "make ci"},
+                ],
+            },
+            "native-policy": {
+                "runs-on": "macos-15",
+                "timeout-minutes": 10,
+                "steps": [
+                    {
+                        "name": "Check out repository",
+                        "uses": checkout_action,
+                        "with": {"persist-credentials": False},
+                    },
+                    {
+                        "name": "Run native and mutation tests",
+                        "run": "make native-test mutation-test build",
+                    },
+                ],
+            },
+        },
+    }
     require_equal(
-        workflow.count("persist-credentials:"),
-        2,
-        "each CI checkout must disable credential persistence exactly once",
-        failures,
-    )
-    require(
-        "persist-credentials: true" not in workflow,
-        "CI workflow must never enable checkout credential persistence",
-        failures,
-    )
-    checkout_steps = workflow_action_blocks(workflow, checkout_action)
-    require_equal(
-        len(checkout_steps),
-        2,
-        "CI workflow must contain both reviewed checkout steps",
-        failures,
-    )
-    for index, checkout_step in enumerate(checkout_steps, start=1):
-        require_contains(
-            checkout_step,
-            "\n        with:\n          persist-credentials: false",
-            f"checkout step {index} must disable credential persistence "
-            "in its with block",
-            failures,
-        )
-    require_contains(
-        workflow,
-        "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405",
-        "CI workflow must pin actions/setup-python",
-        failures,
-    )
-    require_contains(
-        workflow,
-        'python-version: ["3.10", "3.12", "3.14"]',
-        "CI workflow must cover Python 3.10, 3.12, and 3.14",
-        failures,
-    )
-    require_contains(
-        workflow,
-        "workflow_dispatch:",
-        "CI workflow must support manual dispatch",
-        failures,
-    )
-    require(
-        "pull_request_target:" not in workflow,
-        "CI workflow must not use pull_request_target",
-        failures,
-    )
-    action_uses = re.findall(r"^\s*-?\s*uses:\s*([^\s#]+)", workflow, re.MULTILINE)
-    require_equal(
-        action_uses,
-        [
-            checkout_action,
-            "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405",
-            checkout_action,
-        ],
-        "CI workflow must use only the reviewed pinned actions",
-        failures,
-    )
-    run_commands = re.findall(r"^\s*run:\s*([^\n#]+?)\s*$", workflow, re.MULTILINE)
-    require_equal(
-        run_commands,
-        ["make ci", "make native-test mutation-test build"],
-        "CI workflow must run only the reviewed portable and native verification commands",
+        parse_workflow_yaml(workflow, failures),
+        expected_workflow,
+        "CI workflow must match the reviewed parsed execution model",
         failures,
     )
 
