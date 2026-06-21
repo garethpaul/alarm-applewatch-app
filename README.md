@@ -70,7 +70,10 @@ the required SDK or runtime is unavailable, use static checks and source review
 first, then verify on a machine that has the matching platform toolchain.
 GitHub Actions runs the portable matrix on Linux and the Foundation-native
 network policy suite on macOS with pinned actions and read-only permissions. It
-does not claim to compile or execute the legacy WatchKit targets.
+does not claim to compile or execute the legacy WatchKit targets. Static and
+mutation contracts bind credential isolation to both checkout steps and require
+the exact portable and native verification commands, so decoy text,
+checkout-only jobs, and injected credential commands fail closed.
 
 Use [`DEVICE_VERIFICATION.md`](DEVICE_VERIFICATION.md) for the exact-commit
 simulator and paired-device matrix. It covers workspace build, companion and

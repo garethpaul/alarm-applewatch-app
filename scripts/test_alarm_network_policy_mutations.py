@@ -46,6 +46,40 @@ def mutate_and_require_failure(label, relative_path, old, new, command):
 def main():
     python = sys.executable
     structural = [python, "scripts/test_alarm_network_policy_contracts.py"]
+    repository_contract = [python, "scripts/check_alarm_contracts.py"]
+    mutate_and_require_failure(
+        "native checkout credential decoy",
+        ".github/workflows/check.yml",
+        """      - name: Check out repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - name: Run native and mutation tests""",
+        """      - name: Check out repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      # persist-credentials: false
+      - name: Run native and mutation tests""",
+        repository_contract,
+    )
+    mutate_and_require_failure(
+        "missing native verification command",
+        ".github/workflows/check.yml",
+        """      - name: Run native and mutation tests
+        run: make native-test mutation-test build""",
+        """      # Native verification command removed""",
+        repository_contract,
+    )
+    mutate_and_require_failure(
+        "injected credential persistence command",
+        ".github/workflows/check.yml",
+        """      - name: Run deterministic checks
+        run: make ci""",
+        """      - name: Run deterministic checks
+        run: make ci
+      - name: Persist checkout token
+        run: git remote set-url origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}""",
+        repository_contract,
+    )
     mutate_and_require_failure(
         "response byte interception",
         "Alarm WatchKit Extension/InterfaceController.swift",
