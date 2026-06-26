@@ -29,6 +29,7 @@ Priority:
 - Reject alarm endpoint URLs that carry query strings or fragments
 - Reject direct local/private destinations, legacy numeric hosts, IDN labels,
   and encoded-path ambiguity before request creation
+- Reject IANA special-use endpoint namespaces before request creation
 - Keep the checked-in alarm endpoint on a non-resolving placeholder host and
   reject that sentinel at runtime
 - Reject reserved placeholder subdomains without treating unrelated suffix

@@ -26,6 +26,11 @@ def main():
     require("validatedEndpointURL" in implementation, "endpoint policy must be native")
     require("NSASCIIStringEncoding" in implementation, "IDN input must fail closed")
     require("isDisallowedHost" in implementation, "private/local hosts must be rejected")
+    for suffix in ("alt", "arpa", "onion", "example.com", "example.net", "example.org"):
+        require(
+            f'@"{suffix}"' in implementation,
+            f"special-use hostname suffix must be rejected: {suffix}",
+        )
     require("percentEncodedPath" in implementation, "encoded path ambiguity must be rejected")
     require("isAcceptableResponse" in implementation, "response metadata must be validated")
     require("allHeaderFields" in implementation and "valueForHTTPHeaderField" not in implementation,

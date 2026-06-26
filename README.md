@@ -115,6 +115,9 @@ notifications, and privacy-safe evidence while keeping unexecuted rows explicit.
   literals, legacy numeric IPv4 forms, localhost/local/reserved DNS suffixes,
   IDN/punycode labels, encoded-path ambiguity, and every previously documented
   scheme/port/userinfo/query/fragment violation.
+- IANA special-use namespaces such as `.alt`, `.arpa`, and `.onion`, together
+  with reserved `example.com`, `example.net`, and `example.org` names, are not
+  accepted as production alarm endpoints.
 - Alarm responses must remain on the validated URL, return 2xx, declare only
   JSON/plain-text content when a media type is present, and stay within a
   4096-byte streamed body cap. Response bytes are discarded rather than stored.

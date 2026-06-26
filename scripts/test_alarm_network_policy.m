@@ -24,7 +24,7 @@ static NSData *fakeBody = nil;
 @implementation AlarmFakeURLProtocol
 
 + (BOOL)canInitWithRequest:(NSURLRequest *)request {
-    return [[[request URL] host] isEqualToString:@"api.example.com"];
+    return [[[request URL] host] isEqualToString:@"api.vendor.com"];
 }
 
 + (NSURLRequest *)canonicalRequestForRequest:(NSURLRequest *)request {
@@ -139,19 +139,25 @@ static NSURLSessionDataTask *SuspendedTask(NSURL *URL) {
 
 static void TestEndpointValidation(void) {
     NSURL *URL = [AlarmNetworkPolicy
-        validatedEndpointURL:@"  HTTPS://API.EXAMPLE.COM./alarm  "];
+        validatedEndpointURL:@"  HTTPS://API.VENDOR.COM./alarm  "];
     Require(URL != nil, @"public HTTPS endpoint should be accepted");
-    Require([[URL absoluteString] isEqualToString:@"https://api.example.com/alarm"],
+    Require([[URL absoluteString] isEqualToString:@"https://api.vendor.com/alarm"],
             @"accepted endpoints should be canonicalized");
 
     NSArray *rejected = @[
-        @"http://api.example.com/alarm",
+        @"http://api.vendor.com/alarm",
         @"https://example.invalid/alarm",
         @"https://nested.example.invalid/alarm",
         @"https://localhost/alarm",
         @"https://service.local/alarm",
         @"https://service.internal/alarm",
         @"https://service.home.arpa/alarm",
+        @"https://service.alt/alarm",
+        @"https://service.onion/alarm",
+        @"https://service.arpa/alarm",
+        @"https://example.com/alarm",
+        @"https://api.example.net/alarm",
+        @"https://api.example.org/alarm",
         @"https://127.0.0.1/alarm",
         @"https://2130706433/alarm",
         @"https://0x7f000001/alarm",
@@ -160,16 +166,16 @@ static void TestEndpointValidation(void) {
         @"https://169.254.169.254/alarm",
         @"https://éxample.com/alarm",
         @"https://xn--xample-9ua.com/alarm",
-        @"https://api.example.com:443/alarm",
-        @"https://user:password@api.example.com/alarm",
-        @"https://api.example.com/%61larm",
-        @"https://api.example.com/alarm?next=/private",
-        @"https://api.example.com/alarm#fragment",
-        @"https://api.example.com/alarm/../alarm",
-        @"https://api.example.com\\@127.0.0.1/alarm",
+        @"https://api.vendor.com:443/alarm",
+        @"https://user:password@api.vendor.com/alarm",
+        @"https://api.vendor.com/%61larm",
+        @"https://api.vendor.com/alarm?next=/private",
+        @"https://api.vendor.com/alarm#fragment",
+        @"https://api.vendor.com/alarm/../alarm",
+        @"https://api.vendor.com\\@127.0.0.1/alarm",
         @"https://singlelabel/alarm",
-        @"https://-api.example.com/alarm",
-        @"https://api_.example.com/alarm"
+        @"https://-api.vendor.com/alarm",
+        @"https://api_.vendor.com/alarm"
     ];
 
     for (NSString *endpoint in rejected) {
@@ -178,7 +184,7 @@ static void TestEndpointValidation(void) {
 }
 
 static void TestResponseValidation(void) {
-    NSURL *requestURL = [NSURL URLWithString:@"https://api.example.com/alarm"];
+    NSURL *requestURL = [NSURL URLWithString:@"https://api.vendor.com/alarm"];
 
     Require([AlarmNetworkPolicy
                 isAcceptableResponse:Response(requestURL, 204, @{})
@@ -228,7 +234,7 @@ static void TestResponseValidation(void) {
             @"non-ASCII content length should be rejected");
     Require(![AlarmNetworkPolicy
                  isAcceptableResponse:Response(
-                     [NSURL URLWithString:@"https://other.example.com/alarm"],
+                     [NSURL URLWithString:@"https://other.vendor.com/alarm"],
                      200,
                      @{@"Content-Type" : @"application/json"})
                             requestURL:requestURL],
@@ -236,7 +242,7 @@ static void TestResponseValidation(void) {
 }
 
 static void TestResponseBodyGate(void) {
-    NSURL *URL = [NSURL URLWithString:@"https://api.example.com/alarm"];
+    NSURL *URL = [NSURL URLWithString:@"https://api.vendor.com/alarm"];
     NSURLSessionDataTask *task = SuspendedTask(URL);
     AlarmResponseBodyGate *gate = [[AlarmResponseBodyGate alloc] init];
     NSData *boundary = [NSMutableData dataWithLength:AlarmMaximumResponseBodyBytes];
@@ -288,7 +294,7 @@ static AlarmFakeSessionDelegate *RunFakeRequest(NSData *body,
                                                           delegate:delegate
                                                      delegateQueue:nil];
     NSURLSessionDataTask *task =
-        [session dataTaskWithURL:[NSURL URLWithString:@"https://api.example.com/alarm"]];
+        [session dataTaskWithURL:[NSURL URLWithString:@"https://api.vendor.com/alarm"]];
     [task resume];
     long result = dispatch_semaphore_wait(
         delegate.semaphore,

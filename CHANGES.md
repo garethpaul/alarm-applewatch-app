@@ -1,5 +1,25 @@
 # Changes
 
+## 2026-06-26 15:27 PDT - P1 - Reject special-use alarm endpoints
+
+- Summary: rejected IANA special-use alarm endpoint namespaces that satisfied
+  the previous public-DNS-shaped hostname check.
+- Rejected IANA special-use alarm endpoint namespaces before request creation.
+- Files: tightened the Foundation policy, moved native fixtures off reserved
+  example domains, added portable/native tests, six hostile mutations, a
+  completed plan, and synchronized repository guidance.
+- Tests: the focused portable contract failed before implementation on missing
+  `.alt`; Ruby 4.0.5 then passed Python syntax, the full parsed repository
+  contract, portable policy tests, the complete mutation suite including six
+  new suffix mutations, and root/external `make check`.
+- Findings: `.alt`, `.arpa`, `.onion`, and reserved example domains are not
+  production public DNS destinations but were previously accepted.
+- Blockers: native Foundation tests and legacy workspace parsing require macOS;
+  the Linux baseline correctly skipped those rows. The requested Codex review
+  for PR #20 returned HTTP 401 and was skipped after one attempt as instructed.
+- Next action: require PR #20's hosted macOS native policy gate and merge only
+  the exact hosted-green head before verifying post-merge workflows.
+
 ## 2026-06-21
 
 - Required every hosted checkout step to own its adjacent credential-isolation
