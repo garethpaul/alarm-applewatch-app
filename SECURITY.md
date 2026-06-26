@@ -51,6 +51,8 @@ Helpful reports include:
 - Alarm endpoint validation accepts only canonical ASCII public-DNS-shaped
   hosts and rejects IP literals, legacy numeric IPv4 forms, IDN/punycode,
   localhost, local/reserved suffixes, and encoded path ambiguity.
+- IANA special-use names are rejected, including `.alt`, `.arpa`, `.onion`, and
+  the reserved `example.com`, `example.net`, and `example.org` namespaces.
 - Alarm responses must stay on the validated URL, return 2xx, use an allowed
   declared media type, and remain within the 4096-byte streamed body limit.
   Response bytes are discarded rather than retained by Alamofire.

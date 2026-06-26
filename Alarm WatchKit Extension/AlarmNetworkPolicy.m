@@ -17,9 +17,15 @@ NSUInteger const AlarmMaximumResponseBodyBytes = 4096;
         @"localhost",
         @"local",
         @"internal",
+        @"alt",
+        @"arpa",
         @"home.arpa",
+        @"onion",
         @"invalid",
         @"test",
+        @"example.com",
+        @"example.net",
+        @"example.org",
         @"example"
     ];
 

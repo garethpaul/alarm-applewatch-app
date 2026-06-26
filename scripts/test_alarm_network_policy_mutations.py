@@ -328,6 +328,14 @@ permissions:
         "manager.delegate.unreviewedDataCallback = {",
         structural,
     )
+    for suffix in ("alt", "arpa", "onion", "example.com", "example.net", "example.org"):
+        mutate_and_require_failure(
+            f"special-use suffix {suffix}",
+            "Alarm WatchKit Extension/AlarmNetworkPolicy.m",
+            f'        @"{suffix}",',
+            f'        @"removed-{suffix}",',
+            structural,
+        )
     mutate_and_require_failure(
         "extension source membership",
         "Alarm.xcodeproj/project.pbxproj",

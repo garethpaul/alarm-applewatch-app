@@ -848,6 +848,9 @@ def main():
     session_storage_plan = read_text(
         "docs/plans/2026-06-17-watchkit-session-storage-isolation.md", failures
     )
+    special_use_plan = read_text(
+        "docs/plans/2026-06-26-watchkit-special-use-domain-guard.md", failures
+    )
     device_verification = read_text("DEVICE_VERIFICATION.md", failures)
 
     app = read_plist("Alarm/Info.plist", failures)
@@ -1280,6 +1283,24 @@ def main():
         and "artifact, conflict-marker, large-file, and likely-secret audits"
         in request_timeout_plan,
         "WatchKit alarm request-timeout plan must record completed verification",
+        failures,
+    )
+    require(
+        "IANA special-use namespaces" in readme
+        and "IANA special-use names" in security
+        and "Reject IANA special-use endpoint namespaces" in vision
+        and "Rejected IANA special-use alarm endpoint namespaces" in changes
+        and "special-use endpoint namespaces" in agents,
+        "Repository guidance must document special-use endpoint rejection",
+        failures,
+    )
+    require(
+        "Status: Completed" in special_use_plan
+        and "IANA Special-Use Domain Names registry" in special_use_plan
+        and "focused portable contract" in special_use_plan
+        and "six hostile mutations" in special_use_plan
+        and "hosted macOS native policy gate" in special_use_plan,
+        "WatchKit special-use domain plan must record completed verification",
         failures,
     )
 

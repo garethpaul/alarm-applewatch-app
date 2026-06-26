@@ -66,7 +66,8 @@
 - Alarm submissions use an ephemeral session so cookies, credentials, and cache data are not persisted.
 - Alarm submissions disable cookie, credential, and cache stores so one request cannot influence the next.
 - Preserve `AlarmNetworkPolicy` rejection of direct private/local destinations,
-  IDN/punycode, legacy numeric hosts, and encoded path ambiguity.
+  IDN/punycode, legacy numeric hosts, special-use endpoint namespaces, and
+  encoded path ambiguity.
 - Preserve final-response URL/status/content checks and the 4096-byte streamed
   response cap. The dedicated manager intentionally discards response bytes.
 - DNS answers are not pinned; document this residual assumption and never claim
